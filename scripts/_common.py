@@ -5,6 +5,7 @@ fallback. Standard library only - no third-party Python packages, no network
 calls. Subprocess commands are always argv lists (never a shell string), so
 no user-supplied path or filter string can be interpreted as shell syntax.
 """
+import argparse
 import json
 import os
 import platform
@@ -40,6 +41,26 @@ def succeed(payload, as_json):
     payload = {"ok": True, **payload}
     emit(payload, as_json)
     return payload
+
+
+class JSONArgumentParser(argparse.ArgumentParser):
+    """An ArgumentParser whose own usage errors (missing/invalid flags, unknown
+    arguments) raise ImageSkillError instead of argparse's default
+    usage-text-to-stderr plus exit(2). A script's own main() then reports it
+    through the same ok:false/--json contract as every other failure - and,
+    because it's a normal exception rather than a hard process exit,
+    batch.py can catch a bad per-file argument the same way it catches any
+    other per-file failure instead of the whole batch aborting."""
+
+    def error(self, message):
+        raise ImageSkillError(message)
+
+
+def wants_json(argv):
+    """Best-effort check for whether --json was requested, usable even when
+    argparse hasn't (or couldn't) successfully parse argv yet - e.g. to decide
+    how to report a parse error itself."""
+    return "--json" in (sys.argv[1:] if argv is None else argv)
 
 
 def which_magick():

@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
 """check.py - verify a produced image actually opens, matches the promised dimensions/
 format, and did not silently overwrite the original input."""
-import argparse
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import ImageSkillError, fail, identify_dims, run, succeed, which_magick  # noqa: E402
+from _common import (  # noqa: E402
+    ImageSkillError,
+    JSONArgumentParser,
+    wants_json,
+    fail,
+    identify_dims,
+    run,
+    succeed,
+    which_magick,
+)
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="Verify an image output file")
+    parser = JSONArgumentParser(description="Verify an image output file")
     parser.add_argument("output", help="the file to check")
     parser.add_argument("--input", help="original input path; fails if output resolves to this same path")
     parser.add_argument("--expect-width", type=int)
@@ -61,11 +69,12 @@ def run_check(args):
 
 
 def main(argv=None):
-    args = build_parser().parse_args(argv)
+    as_json = wants_json(argv)
     try:
+        args = build_parser().parse_args(argv)
         payload = run_check(args)
     except ImageSkillError as e:
-        fail(str(e), args.json)
+        fail(str(e), as_json)
         return
     succeed(payload, args.json)
 

@@ -2,13 +2,14 @@
 """resize.py - resize an image using fit (default, no distortion), fill (crop to
 cover), or exact (force size, may distort). Verifies the output dimensions against
 what was promised before reporting success."""
-import argparse
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import (  # noqa: E402
     ImageSkillError,
+    JSONArgumentParser,
+    wants_json,
     check_output_not_exists,
     check_output_not_input,
     identify_dims,
@@ -21,7 +22,7 @@ from _common import (  # noqa: E402
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="Resize an image (fit, fill, or exact)")
+    parser = JSONArgumentParser(description="Resize an image (fit, fill, or exact)")
     parser.add_argument("input")
     parser.add_argument("-o", "--output", required=True)
     parser.add_argument("--width", type=int, required=True)
@@ -131,11 +132,12 @@ def run_resize(args):
 
 
 def main(argv=None):
-    args = build_parser().parse_args(argv)
+    as_json = wants_json(argv)
     try:
+        args = build_parser().parse_args(argv)
         payload = run_resize(args)
     except ImageSkillError as e:
-        fail(str(e), args.json)
+        fail(str(e), as_json)
         return
     succeed(payload, args.json)
 

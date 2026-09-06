@@ -2,16 +2,35 @@
 """_contract.py - machine-readable description of the toolset (contract) and a live
 environment check (doctor). Both are JSON-first: an agent should read `contract`
 instead of guessing flags, and run `doctor` before assuming a format/tool works."""
-import argparse
 import json
 import subprocess
 import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import which_magick, which_sips  # noqa: E402
+from _common import (  # noqa: E402
+    ImageSkillError,
+    JSONArgumentParser,
+    fail,
+    wants_json,
+    which_magick,
+    which_sips,
+)
 
-VERSION = "0.1.0"
+
+def _read_version():
+    """Single source of truth is package.json (copied alongside scripts/ by the
+    installer into every target) - avoids a hardcoded version string here drifting
+    out of sync with it."""
+    pkg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "package.json")
+    try:
+        with open(pkg_path, "r", encoding="utf-8") as f:
+            return json.load(f).get("version", "0.0.0")
+    except (OSError, ValueError):
+        return "0.0.0"
+
+
+VERSION = _read_version()
 
 TOOLS = [
     {
@@ -90,8 +109,8 @@ TOOLS = [
 
 RULES = [
     "Never overwrite the input: -o/--output is required and must differ from the input path.",
-    "Every tool supports --json for machine-readable output and --dry-run to preview the command without running it.",
-    "Failures return ok:false with a human-readable 'reason'; a broken or empty output is never reported as success.",
+    "Every tool supports --json for machine-readable output; every tool that writes a file also supports --dry-run to preview the command without running it (check.py writes nothing, so it has no --dry-run).",
+    "Failures - including a malformed invocation with missing or invalid flags - return ok:false with a human-readable 'reason'; a broken or empty output is never reported as success.",
     "Call probe.py before editing and check.py after, to confirm the result matches what was promised.",
     "Tools never invoke mogrify (which overwrites in place) and never build a magick command from caller-supplied strings.",
 ]
@@ -236,7 +255,7 @@ def cmd_doctor(args):
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="image-skill contract/doctor")
+    parser = JSONArgumentParser(description="image-skill contract/doctor")
     sub = parser.add_subparsers(dest="command", required=True)
 
     contract_p = sub.add_parser("contract", help="describe the available tools as JSON")
@@ -251,7 +270,12 @@ def build_parser():
 
 
 def main(argv=None):
-    args = build_parser().parse_args(argv)
+    as_json = wants_json(argv)
+    try:
+        args = build_parser().parse_args(argv)
+    except ImageSkillError as e:
+        fail(str(e), as_json)
+        return
     args.func(args)
 
 

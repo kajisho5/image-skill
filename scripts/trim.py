@@ -5,13 +5,14 @@ the image wasn't a simple bordered image and --fuzz needs adjusting.
 
 magick only: sips has no border-detection/trim support.
 """
-import argparse
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import (  # noqa: E402
     ImageSkillError,
+    JSONArgumentParser,
+    wants_json,
     check_output_not_exists,
     check_output_not_input,
     identify_dims,
@@ -23,7 +24,7 @@ from _common import (  # noqa: E402
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="Trim a solid-color border from an image")
+    parser = JSONArgumentParser(description="Trim a solid-color border from an image")
     parser.add_argument("input")
     parser.add_argument("-o", "--output", required=True)
     parser.add_argument("--fuzz", type=float, default=2.0, help="color similarity tolerance, percent (default 2.0)")
@@ -84,11 +85,12 @@ def run_trim(args):
 
 
 def main(argv=None):
-    args = build_parser().parse_args(argv)
+    as_json = wants_json(argv)
     try:
+        args = build_parser().parse_args(argv)
         payload = run_trim(args)
     except ImageSkillError as e:
-        fail(str(e), args.json)
+        fail(str(e), as_json)
         return
     succeed(payload, args.json)
 

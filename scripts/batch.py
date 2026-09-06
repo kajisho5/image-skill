@@ -3,14 +3,13 @@
 image in a folder, writing to a separate output folder. Never overwrites inputs or
 existing outputs; a single bad file is recorded as a failure and the rest of the
 batch still runs."""
-import argparse
 import glob
 import importlib
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import ImageSkillError, fail, succeed  # noqa: E402
+from _common import ImageSkillError, JSONArgumentParser, fail, succeed, wants_json  # noqa: E402
 
 TOOL_MODULES = {
     "convert": "convert",
@@ -24,7 +23,7 @@ IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".heic", ".heif", ".tif", ".tiff", ".bmp"
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(
+    parser = JSONArgumentParser(
         description="Run an image-skill tool over every image in a folder",
         epilog="Extra args after -- are forwarded to the tool, e.g.: "
         "batch.py resize -i ./photos -o ./out --json -- --width 1200 --height 1200 --mode fit",
@@ -97,11 +96,12 @@ def run_batch(args):
 
 
 def main(argv=None):
-    args = parse_args(argv)
+    as_json = wants_json(argv)
     try:
+        args = parse_args(argv)
         payload = run_batch(args)
     except ImageSkillError as e:
-        fail(str(e), args.json)
+        fail(str(e), as_json)
         return
     succeed(payload, args.json)
 

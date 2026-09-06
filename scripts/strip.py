@@ -5,13 +5,14 @@ image doesn't end up sideways once the orientation tag is gone.
 magick only: sips has no reliable blanket metadata-strip flag, so this tool
 reports ok:false with a clear reason when only sips is available (see doctor).
 """
-import argparse
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import (  # noqa: E402
     ImageSkillError,
+    JSONArgumentParser,
+    wants_json,
     check_output_not_exists,
     check_output_not_input,
     fail,
@@ -22,7 +23,7 @@ from _common import (  # noqa: E402
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="Strip GPS/EXIF metadata from an image")
+    parser = JSONArgumentParser(description="Strip GPS/EXIF metadata from an image")
     parser.add_argument("input")
     parser.add_argument("-o", "--output", required=True)
     parser.add_argument("--overwrite", action="store_true")
@@ -59,11 +60,12 @@ def run_strip(args):
 
 
 def main(argv=None):
-    args = build_parser().parse_args(argv)
+    as_json = wants_json(argv)
     try:
+        args = build_parser().parse_args(argv)
         payload = run_strip(args)
     except ImageSkillError as e:
-        fail(str(e), args.json)
+        fail(str(e), as_json)
         return
     succeed(payload, args.json)
 
