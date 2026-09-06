@@ -34,6 +34,18 @@ def build_parser():
     return parser
 
 
+def _sips_fit_dims(in_w, in_h, box_w, box_h):
+    """Compute the size that fits within box_w x box_h while preserving the source
+    aspect ratio. sips has no single flag for a two-dimensional box fit - its `-Z`
+    only constrains the longest edge, which overflows the other dimension whenever
+    the box isn't square (e.g. a tall image into a wide box). The size is computed
+    here instead, then sips is told to produce that exact size with `-z`."""
+    scale = min(box_w / in_w, box_h / in_h)
+    new_w = max(1, round(in_w * scale))
+    new_h = max(1, round(in_h * scale))
+    return new_w, new_h
+
+
 def _build_cmd(backend, backend_bin, input_path, output_path, width, height, mode, quality):
     box = f"{width}x{height}"
 
@@ -55,7 +67,11 @@ def _build_cmd(backend, backend_bin, input_path, output_path, width, height, mod
         raise ImageSkillError(
             f"sips backend only supports resize mode 'fit' (got '{mode}'); install ImageMagick for fill/exact"
         )
-    return [backend_bin, "-Z", str(max(width, height)), input_path, "--out", output_path]
+    in_w, in_h = identify_dims(input_path)
+    if not in_w or not in_h:
+        raise ImageSkillError("could not read source dimensions for sips fit")
+    new_w, new_h = _sips_fit_dims(in_w, in_h, width, height)
+    return [backend_bin, "-z", str(new_h), str(new_w), input_path, "--out", output_path]
 
 
 def _verify_dims(output_path, width, height, mode):
