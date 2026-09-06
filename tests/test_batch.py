@@ -1,0 +1,54 @@
+import os
+import sys
+import tempfile
+import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+
+import batch  # noqa: E402
+from _common import ImageSkillError, which_magick, which_sips  # noqa: E402
+from fixtures import write_solid_png  # noqa: E402
+
+HAS_BACKEND = bool(which_magick() or which_sips())
+
+
+class TestBatch(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.in_dir = os.path.join(self.tmp.name, "in")
+        self.out_dir = os.path.join(self.tmp.name, "out")
+        os.makedirs(self.in_dir)
+
+    def test_rejects_same_input_and_output_dir(self):
+        args = batch.parse_args(
+            ["thumb", "-i", self.in_dir, "-o", self.in_dir, "--json", "--", "--long-edge", "10"]
+        )
+        with self.assertRaises(ImageSkillError):
+            batch.run_batch(args)
+
+    def test_convert_requires_ext(self):
+        args = batch.parse_args(["convert", "-i", self.in_dir, "-o", self.out_dir, "--json"])
+        with self.assertRaises(ImageSkillError) as ctx:
+            batch.run_batch(args)
+        self.assertIn("--ext", str(ctx.exception))
+
+    @unittest.skipUnless(HAS_BACKEND, "requires ImageMagick or sips")
+    def test_processes_every_image_without_overwriting_inputs(self):
+        write_solid_png(os.path.join(self.in_dir, "a.png"), 40, 40)
+        write_solid_png(os.path.join(self.in_dir, "b.png"), 40, 40)
+
+        args = batch.parse_args(
+            ["thumb", "-i", self.in_dir, "-o", self.out_dir, "--json", "--", "--long-edge", "20"]
+        )
+        payload = batch.run_batch(args)
+
+        self.assertEqual(payload["count"], 2)
+        self.assertTrue(payload["all_ok"])
+        for name in ("a.png", "b.png"):
+            self.assertTrue(os.path.isfile(os.path.join(self.in_dir, name)))
+            self.assertTrue(os.path.isfile(os.path.join(self.out_dir, name)))
+
+
+if __name__ == "__main__":
+    unittest.main()
