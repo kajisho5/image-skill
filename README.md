@@ -3,9 +3,19 @@
 Give your coding agent a local image editor that does not overwrite originals.
 
 ```bash
-npx image-skill          # installs into .claude/skills, .cursor/rules, and AGENTS.md
-npx image-skill doctor   # checks for magick/sips and reports what's actually usable
+npx image-skill                 # installs into ~/.claude/skills/image-skill (default)
+npx image-skill --cursor        # ~/.cursor/skills/image-skill
+npx image-skill --codex         # ~/.codex/skills/image-skill
+npx image-skill --all           # all three of the above
+npx image-skill --dir <parent>  # <parent>/image-skill
+npx image-skill --project       # ./.claude/skills/image-skill (this project only)
+npx image-skill --uninstall     # remove the installed target(s)
+npx image-skill doctor [--json] # check for magick/sips and what's actually usable
+npx image-skill contract --json # machine-readable tool spec
+npx image-skill --help
 ```
+
+Already installed? Re-running replaces the copy with whatever version you run - reinstall anytime to update.
 
 ## Example
 
