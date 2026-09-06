@@ -1,5 +1,7 @@
 # image-skill
 
+[![test](https://github.com/kajisho5/image-skill/actions/workflows/test.yml/badge.svg)](https://github.com/kajisho5/image-skill/actions/workflows/test.yml)
+
 Give your coding agent a local image editor that does not overwrite originals.
 
 ```bash

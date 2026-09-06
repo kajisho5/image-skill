@@ -28,6 +28,11 @@ Still `0.1.0` - not bumped yet; changes below are additive/fixes except where ma
   second hardcoded version string, so the two can no longer drift apart.
 - Doc fixes: `SKILL.md` no longer claims `check.py` supports `--dry-run`
   (it doesn't - it writes nothing).
+- Added GitHub Actions CI (`.github/workflows/test.yml`): the test suite now
+  runs on every push/PR against Ubuntu with and without ImageMagick, and on
+  macOS - the first time the sips-only code paths have actually executed
+  anywhere rather than being validated by arithmetic/mocking alone. A
+  separate job exercises every `bin/install.js` target end to end.
 
 ## 0.1.0
 
