@@ -1,0 +1,77 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ubuntu-no-magick-binary:
+    # Ubuntu's apt "imagemagick" package is IM6 without a `magick` compat
+    # command (only convert/identify/mogrify/...), so this job exercises the
+    # "no magick" code paths: doctor's no-backend reporting, and every test
+    # that isn't gated on a backend. It intentionally does NOT install
+    # ImageMagick, to keep that signal honest instead of faking a `magick`
+    # binary.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s tests -v
+      - run: python3 scripts/_contract.py doctor --json
+      - run: python3 scripts/_contract.py contract --json
+
+  ubuntu-with-imagemagick:
+    # apt's imagemagick still gives real convert/identify binaries; symlink
+    # `magick` to `convert` so the magick-backed code paths (resize/strip/
+    # trim/convert/probe) actually run in CI instead of only being checked
+    # locally by whoever happens to have ImageMagick installed.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+      - name: Provide a magick compat shim if apt's package lacks one
+        run: |
+          if ! command -v magick >/dev/null 2>&1; then
+            printf '#!/bin/sh\nif [ "$1" = "identify" ]; then shift; exec identify "$@"; fi\nexec convert "$@"\n' | sudo tee /usr/local/bin/magick >/dev/null
+            sudo chmod +x /usr/local/bin/magick
+          fi
+          magick -version
+      - run: python3 -m unittest discover -s tests -v
+
+  macos-sips:
+    # macOS ships sips out of the box - this is the only job that actually
+    # exercises the sips-only fallback code paths (resize fit box math,
+    # convert, probe) for real, including the fit-mode integration test that
+    # is always skipped everywhere else.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s tests -v
+      - run: python3 scripts/_contract.py doctor --json
+
+  installer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: node -c bin/install.js
+      - name: Exercise every install target in a throwaway HOME
+        run: |
+          set -e
+          export HOME="$RUNNER_TEMP/fake-home"
+          mkdir -p "$HOME"
+          node bin/install.js
+          test -f "$HOME/.claude/skills/image-skill/SKILL.md"
+          node bin/install.js --cursor
+          test -f "$HOME/.cursor/skills/image-skill/SKILL.md"
+          node bin/install.js --codex
+          test -f "$HOME/.codex/skills/image-skill/SKILL.md"
+          node bin/install.js --uninstall
+          test ! -d "$HOME/.claude/skills/image-skill"
+          node bin/install.js doctor --json
+          node bin/install.js contract --json
