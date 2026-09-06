@@ -1,0 +1,33 @@
+{
+  "name": "image-skill",
+  "version": "0.1.0",
+  "description": "Give your coding agent a local image editor that does not overwrite originals.",
+  "bin": {
+    "image-skill": "bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "scripts",
+    "SKILL.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kajisho5/image-skill"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "cursor",
+    "codex",
+    "imagemagick",
+    "image",
+    "skill",
+    "agent"
+  ]
+}
