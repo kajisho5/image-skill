@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """thumb.py - create a thumbnail sized by its longest edge, preserving aspect ratio.
 Never upscales past the source size."""
-import argparse
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import (  # noqa: E402
     ImageSkillError,
+    JSONArgumentParser,
+    wants_json,
     check_output_not_exists,
     check_output_not_input,
     identify_dims,
@@ -20,7 +21,7 @@ from _common import (  # noqa: E402
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="Create a thumbnail sized by its longest edge")
+    parser = JSONArgumentParser(description="Create a thumbnail sized by its longest edge")
     parser.add_argument("input")
     parser.add_argument("-o", "--output", required=True)
     parser.add_argument("--long-edge", type=int, required=True, help="target size of the longer side, in pixels")
@@ -78,11 +79,12 @@ def run_thumb(args):
 
 
 def main(argv=None):
-    args = build_parser().parse_args(argv)
+    as_json = wants_json(argv)
     try:
+        args = build_parser().parse_args(argv)
         payload = run_thumb(args)
     except ImageSkillError as e:
-        fail(str(e), args.json)
+        fail(str(e), as_json)
         return
     succeed(payload, args.json)
 

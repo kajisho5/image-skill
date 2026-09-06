@@ -46,10 +46,15 @@ speaks JSON and never overwrites its input.
    `python3 scripts/_contract.py doctor --json` once per session before
    using `convert`/`resize`/`thumb` for HEIC or WebP, or before `strip`/
    `trim` at all (magick-only, see doctor's `tools` and `heic`/`webp` fields).
-6. **Every script supports `--json` and `--dry-run`.** Use `--dry-run` to see
-   the exact command that would run without executing it. Either run the
-   command for real via the script, or don't - don't reconstruct it yourself
-   from the dry-run output.
+6. **Every script supports `--json`; every script that writes a file also
+   supports `--dry-run`** (`check.py` doesn't write anything, so it has no
+   `--dry-run`). Use `--dry-run` to see the exact command that would run
+   without executing it. Either run the command for real via the script, or
+   don't - don't reconstruct it yourself from the dry-run output.
+7. **A malformed invocation still returns `ok:false` JSON with `--json`.**
+   Missing or invalid flags are reported the same way as any other failure -
+   never assume you have to pre-validate flags yourself before calling a
+   script.
 
 ## Typical flow
 

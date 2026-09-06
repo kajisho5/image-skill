@@ -33,6 +33,21 @@ class TestBatch(unittest.TestCase):
             batch.run_batch(args)
         self.assertIn("--ext", str(ctx.exception))
 
+    def test_per_file_argparse_error_is_recorded_not_fatal(self):
+        """A bad per-file invocation (e.g. forgetting `-- --width/--height`) must
+        show up as one failed entry in `results`, not crash the whole batch -
+        JSONArgumentParser.error() raises ImageSkillError instead of calling
+        sys.exit(), so run_batch's existing per-file try/except catches it."""
+        write_solid_png(os.path.join(self.in_dir, "a.png"), 10, 10)
+
+        args = batch.parse_args(["resize", "-i", self.in_dir, "-o", self.out_dir, "--json"])
+        payload = batch.run_batch(args)
+
+        self.assertEqual(payload["count"], 1)
+        self.assertFalse(payload["all_ok"])
+        self.assertFalse(payload["results"][0]["ok"])
+        self.assertIn("--width", payload["results"][0]["reason"])
+
     @unittest.skipUnless(HAS_BACKEND, "requires ImageMagick or sips")
     def test_processes_every_image_without_overwriting_inputs(self):
         write_solid_png(os.path.join(self.in_dir, "a.png"), 40, 40)

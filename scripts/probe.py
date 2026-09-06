@@ -6,16 +6,24 @@ magick is the primary backend and reports every field. sips (macOS) can only
 report width/height/format; colorspace/has_alpha/has_gps come back as null
 with a note.
 """
-import argparse
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import ImageSkillError, fail, run, succeed, which_magick, which_sips  # noqa: E402
+from _common import (  # noqa: E402
+    ImageSkillError,
+    JSONArgumentParser,
+    wants_json,
+    fail,
+    run,
+    succeed,
+    which_magick,
+    which_sips,
+)
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(
+    parser = JSONArgumentParser(
         description="Probe an image: dimensions, format, colorspace, alpha, GPS presence"
     )
     parser.add_argument("input")
@@ -97,11 +105,12 @@ def run_probe(args):
 
 
 def main(argv=None):
-    args = build_parser().parse_args(argv)
+    as_json = wants_json(argv)
     try:
+        args = build_parser().parse_args(argv)
         payload = run_probe(args)
     except ImageSkillError as e:
-        fail(str(e), args.json)
+        fail(str(e), as_json)
         return
     succeed(payload, args.json)
 
