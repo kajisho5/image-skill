@@ -3,6 +3,7 @@
 environment check (doctor). Both are JSON-first: an agent should read `contract`
 instead of guessing flags, and run `doctor` before assuming a format/tool works."""
 import json
+import re
 import subprocess
 import sys
 import os
@@ -120,6 +121,25 @@ def build_contract_payload():
     return {"ok": True, "version": VERSION, "tools": TOOLS, "rules": RULES}
 
 
+_FORMAT_MODE_RE = re.compile(r"^\s*([A-Za-z0-9_]+)\*?(?:\s+\S+)?\s+([r-][w-][+-])\s", re.MULTILINE)
+
+
+def _format_capabilities(formats_out):
+    """Map format name (upper) -> (can_read, can_write), parsed from the Mode
+    column of `magick -list format` (e.g. 'rw+', 'r--', '-w-').
+
+    A format name appearing in the list at all does NOT mean both directions
+    work: a read-only delegate (mode 'r--') still lets `magick in.png
+    out.heic` exit 0, silently writing the wrong format under the requested
+    name instead of failing (see verify_output_format in _common.py) - so
+    doctor has to check the actual mode flags, not just presence of the name.
+    """
+    caps = {}
+    for name, mode in _FORMAT_MODE_RE.findall(formats_out):
+        caps[name.upper()] = (mode[0] == "r", mode[1] == "w")
+    return caps
+
+
 def _magick_lists(magick):
     formats = subprocess.run([magick, "-list", "format"], capture_output=True, text=True, timeout=30)
     policy = subprocess.run([magick, "-list", "policy"], capture_output=True, text=True, timeout=30)
@@ -151,8 +171,8 @@ def build_doctor_payload():
         "sips": {"found": bool(sips), "path": sips},
     }
 
-    heic = {"usable": False, "backend": None, "fix": None}
-    webp = {"usable": False, "backend": None, "fix": None}
+    heic = {"usable": False, "read": False, "write": False, "backend": None, "fix": None}
+    webp = {"usable": False, "read": False, "write": False, "backend": None, "fix": None}
     pdf_policy = None
     magick_version = None
 
@@ -160,31 +180,55 @@ def build_doctor_payload():
         try:
             formats_out, policy_out, version_out = _magick_lists(magick)
             magick_version = version_out.strip().splitlines()[0] if version_out.strip() else None
+            caps = _format_capabilities(formats_out)
+            heic_read, heic_write = caps.get("HEIC", (False, False))
+            webp_read, webp_write = caps.get("WEBP", (False, False))
 
-            if "HEIC" in formats_out.upper():
-                heic = {"usable": True, "backend": "magick", "fix": None}
+            # "usable" tracks the workflow this skill actually documents: HEIC is
+            # read FROM (iPhone photos in, something else out); WebP is written TO
+            # (an OG/thumb asset out). Both directions are still reported so an
+            # agent doesn't get burned assuming the other direction also works.
+            if heic_read:
+                heic = {
+                    "usable": True,
+                    "read": True,
+                    "write": heic_write,
+                    "backend": "magick",
+                    "fix": None
+                    if heic_write
+                    else "read-only HEIC on this build (no encode delegate) - can convert FROM HEIC but not "
+                    "create it; reinstall ImageMagick with libheif's encoder for write support, e.g. "
+                    "`brew reinstall imagemagick`, or use sips on macOS to write HEIC",
+                }
             elif is_mac and sips:
                 heic = {
                     "usable": True,
+                    "read": True,
+                    "write": True,
                     "backend": "sips",
                     "fix": None,
-                    "note": "magick has no HEIC delegate here; falling back to sips for HEIC",
+                    "note": "magick has no HEIC read delegate here; falling back to sips for HEIC",
                 }
             else:
                 heic = {
                     "usable": False,
+                    "read": False,
+                    "write": False,
                     "backend": None,
                     "fix": "reinstall ImageMagick with HEIC support, e.g. `brew reinstall imagemagick` "
                     "(needs libheif), or run on macOS to use sips instead",
                 }
 
-            if "WEBP" in formats_out.upper():
-                webp = {"usable": True, "backend": "magick", "fix": None}
+            if webp_write:
+                webp = {"usable": True, "read": webp_read, "write": True, "backend": "magick", "fix": None}
             else:
                 webp = {
                     "usable": False,
+                    "read": webp_read,
+                    "write": False,
                     "backend": None,
-                    "fix": "reinstall ImageMagick with WebP support, e.g. `brew reinstall imagemagick` (needs libwebp)",
+                    "fix": "reinstall ImageMagick with WebP write support, e.g. `brew reinstall imagemagick` "
+                    "(needs libwebp)",
                 }
 
             pdf_disabled = "PDF" in policy_out.upper() and 'rights="none"' in policy_out.lower()
@@ -197,21 +241,31 @@ def build_doctor_payload():
                 ),
             }
         except (subprocess.TimeoutExpired, OSError) as e:
-            heic = {"usable": False, "backend": None, "fix": f"could not query magick: {e}"}
+            heic = {"usable": False, "read": False, "write": False, "backend": None, "fix": f"could not query magick: {e}"}
     elif is_mac and sips:
-        heic = {"usable": True, "backend": "sips", "fix": None}
+        heic = {"usable": True, "read": True, "write": True, "backend": "sips", "fix": None}
         webp = {
             "usable": False,
+            "read": False,
+            "write": False,
             "backend": None,
             "fix": "sips cannot write WebP; install ImageMagick: `brew install imagemagick`",
         }
     else:
         heic = {
             "usable": False,
+            "read": False,
+            "write": False,
             "backend": None,
             "fix": "install ImageMagick (`brew install imagemagick` / your package manager) or run on macOS for sips",
         }
-        webp = {"usable": False, "backend": None, "fix": "install ImageMagick: `brew install imagemagick`"}
+        webp = {
+            "usable": False,
+            "read": False,
+            "write": False,
+            "backend": None,
+            "fix": "install ImageMagick: `brew install imagemagick`",
+        }
 
     tools = {
         "probe": _tool_status(magick, sips),

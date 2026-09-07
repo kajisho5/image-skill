@@ -14,6 +14,7 @@ from _common import (  # noqa: E402
     fail,
     run,
     succeed,
+    verify_output_format,
     which_magick,
     which_sips,
 )
@@ -70,6 +71,7 @@ def run_convert(args):
 
     if not os.path.isfile(args.output):
         raise ImageSkillError("conversion reported success but output file is missing")
+    verify_output_format(args.output, backend)
 
     return {"input": args.input, "output": args.output, "backend": backend}
 
