@@ -18,6 +18,7 @@ from _common import (  # noqa: E402
     fail,
     run,
     succeed,
+    verify_output_format,
     which_magick,
 )
 
@@ -51,6 +52,7 @@ def run_strip(args):
 
     if not os.path.isfile(args.output):
         raise ImageSkillError("strip reported success but output file is missing")
+    verify_output_format(args.output, "magick")
 
     gps_result = run([magick, "identify", "-format", "%[EXIF:GPSLatitude]", args.output])
     if gps_result["stdout"].strip():

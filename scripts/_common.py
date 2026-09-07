@@ -102,6 +102,50 @@ def run(cmd, dry_run=False, timeout=120):
     return {"dry_run": False, "command": cmd, "stdout": result.stdout, "stderr": result.stderr}
 
 
+EXT_TO_MAGICK_FORMAT = {
+    "jpg": "JPEG",
+    "jpeg": "JPEG",
+    "png": "PNG",
+    "webp": "WEBP",
+    "heic": "HEIC",
+    "heif": "HEIC",
+    "gif": "GIF",
+    "bmp": "BMP",
+    "tif": "TIFF",
+    "tiff": "TIFF",
+}
+
+
+def verify_output_format(output_path, backend):
+    """After a magick-backed write, confirm the output's actual format matches its
+    extension.
+
+    magick can "succeed" (exit 0, only a stderr warning) while writing the
+    *input* format under the requested output name when it has no encode
+    delegate for the target format - e.g. writing to .heic on a build whose
+    HEIC support is read-only. Without this check that shows up as ok:true for
+    a mislabeled file instead of the failure it actually is. sips is skipped:
+    it's restricted to a small, known-writable set of formats already (see
+    convert.py's SIPS_FORMATS), so this class of silent-fallback isn't a
+    concern there.
+    """
+    if backend != "magick":
+        return
+    ext = os.path.splitext(output_path)[1].lstrip(".").lower()
+    expected = EXT_TO_MAGICK_FORMAT.get(ext)
+    if not expected:
+        return
+    magick = which_magick()
+    result = run([magick, "identify", "-format", "%m", output_path])
+    actual = result["stdout"].strip().upper()
+    if actual != expected:
+        os.remove(output_path)
+        raise ImageSkillError(
+            f"expected to write {expected} but got {actual or 'an unreadable file'} instead "
+            f"(likely no {expected} encode delegate on this system - run doctor to check write support)"
+        )
+
+
 def identify_dims(path):
     """Return (width, height) using whichever backend is available."""
     magick = which_magick()

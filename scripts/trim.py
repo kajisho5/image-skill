@@ -19,6 +19,7 @@ from _common import (  # noqa: E402
     fail,
     run,
     succeed,
+    verify_output_format,
     which_magick,
 )
 
@@ -59,6 +60,7 @@ def run_trim(args):
 
     if not os.path.isfile(args.output):
         raise ImageSkillError("trim reported success but output file is missing")
+    verify_output_format(args.output, "magick")
 
     out_w, out_h = identify_dims(args.output)
     in_area = in_w * in_h

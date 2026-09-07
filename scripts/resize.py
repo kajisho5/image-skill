@@ -16,6 +16,7 @@ from _common import (  # noqa: E402
     fail,
     run,
     succeed,
+    verify_output_format,
     which_magick,
     which_sips,
 )
@@ -118,6 +119,7 @@ def run_resize(args):
 
     if not os.path.isfile(args.output):
         raise ImageSkillError("resize reported success but output file is missing")
+    verify_output_format(args.output, backend)
 
     out_w, out_h = _verify_dims(args.output, args.width, args.height, args.mode)
 
