@@ -38,7 +38,10 @@ class TestHeicRoundTrip(unittest.TestCase):
         probed = probe.run_probe(probe.build_parser().parse_args([heic_path, "--json"]))
         self.assertEqual(probed["width"], 32)
         self.assertEqual(probed["height"], 24)
-        self.assertEqual(probed["format"], "HEIC")
+        # Case varies by backend - magick reports "HEIC", sips reports "heic" -
+        # and the project's own convention (check.py's --expect-format) already
+        # treats format names as case-insensitive, so this does too.
+        self.assertEqual(probed["format"].upper(), "HEIC")
 
 
 if __name__ == "__main__":
