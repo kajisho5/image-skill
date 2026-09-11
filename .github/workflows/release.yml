@@ -1,0 +1,169 @@
+name: Release
+
+# Single job, triggered on every push to main. This is deliberate: a push
+# made with the default GITHUB_TOKEN (the version-bump commit and tag this
+# job itself pushes) does NOT trigger another workflow run - that's GitHub's
+# built-in anti-recursion behavior. Splitting this into "push to main" plus a
+# second "on: push tags" workflow would mean the second workflow never fires,
+# since the tag push here is made with GITHUB_TOKEN. Everything - version
+# resolution, file bumps, changelog, tag, GitHub Release, npm publish - has
+# to happen in this one job.
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Read current package.json version
+        id: pkg
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Find latest release tag
+        id: latest_tag
+        run: |
+          latest=$(git tag --list 'v*' --sort=-v:refname | head -n1 || true)
+          echo "tag=$latest" >> "$GITHUB_OUTPUT"
+          echo "version=${latest#v}" >> "$GITHUB_OUTPUT"
+
+      # disable-releaser: true means this makes zero changes to GitHub
+      # Releases - it only computes the next version + changelog body from
+      # merged PR labels since the last release. A true dry run.
+      - name: Resolve next version and changelog body (dry run)
+        id: drafter
+        uses: release-drafter/release-drafter@v6
+        with:
+          config-name: release-drafter.yml
+          disable-releaser: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Auto-bump only if package.json's current version is still exactly the
+      # last tagged version (nobody has manually bumped it ahead since then,
+      # including on the very first run when no tag exists yet - the current
+      # package.json version is then treated as the value to release).
+      # Otherwise a manual bump wins outright and is never overwritten.
+      - name: Decide release version
+        id: decide
+        run: |
+          if [ -n "$LATEST_TAG" ] && [ "$PKG_VERSION" = "$LATEST_TAG_VERSION" ]; then
+            echo "auto_bump=true" >> "$GITHUB_OUTPUT"
+            echo "version=$RESOLVED_VERSION" >> "$GITHUB_OUTPUT"
+          else
+            echo "auto_bump=false" >> "$GITHUB_OUTPUT"
+            echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          LATEST_TAG: ${{ steps.latest_tag.outputs.tag }}
+          LATEST_TAG_VERSION: ${{ steps.latest_tag.outputs.version }}
+          PKG_VERSION: ${{ steps.pkg.outputs.version }}
+          RESOLVED_VERSION: ${{ steps.drafter.outputs.resolved_version }}
+
+      - name: Check whether this version is already tagged
+        id: exists
+        run: |
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "tagged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tagged=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          VERSION: ${{ steps.decide.outputs.version }}
+
+      - name: Check for an npm publish token
+        id: npm_check
+        run: echo "has_token=${{ secrets.NPM_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Bump package.json version
+        if: steps.decide.outputs.auto_bump == 'true' && steps.exists.outputs.tagged == 'false'
+        run: node .github/scripts/bump-version.js
+        env:
+          NEW_VERSION: ${{ steps.decide.outputs.version }}
+
+      # RELEASE_BODY (release-drafter's output, built from contributor PR
+      # titles) is passed via `env:`, not interpolated into this or any run:
+      # block with `${{ }}` - see prepend-changelog.js for why that matters.
+      - name: Update CHANGELOG.md
+        if: steps.exists.outputs.tagged == 'false'
+        run: node .github/scripts/prepend-changelog.js
+        env:
+          RELEASE_VERSION: ${{ steps.decide.outputs.version }}
+          RELEASE_BODY: ${{ steps.drafter.outputs.body }}
+
+      - name: Commit release files
+        if: steps.exists.outputs.tagged == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json CHANGELOG.md
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "chore(release): v$VERSION"
+            git push origin HEAD:main
+          fi
+        env:
+          VERSION: ${{ steps.decide.outputs.version }}
+
+      - name: Create and push tag
+        if: steps.exists.outputs.tagged == 'false'
+        run: |
+          git tag -a "v$VERSION" -m "v$VERSION"
+          git push origin "v$VERSION"
+        env:
+          VERSION: ${{ steps.decide.outputs.version }}
+
+      # Written to a file and passed with --notes-file rather than as a CLI
+      # argument or embedded in the run: script - same untrusted-content
+      # reasoning as the changelog step.
+      - name: Write release notes to file
+        if: steps.exists.outputs.tagged == 'false'
+        run: printf '%s\n' "$RELEASE_BODY" > "$RUNNER_TEMP/release-notes.md"
+        env:
+          RELEASE_BODY: ${{ steps.drafter.outputs.body }}
+
+      - name: Create GitHub Release
+        if: steps.exists.outputs.tagged == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.decide.outputs.version }}
+        run: |
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
+
+      # Skips cleanly (job stays green) when no NPM_TOKEN secret is
+      # configured - only the publish step is skipped, tag/Release still
+      # happen above.
+      - name: Publish to npm
+        if: steps.exists.outputs.tagged == 'false' && steps.npm_check.outputs.has_token == 'true'
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Note that npm publish was skipped
+        if: steps.exists.outputs.tagged == 'false' && steps.npm_check.outputs.has_token == 'false'
+        run: echo "::notice::NPM_TOKEN secret not set - skipped npm publish. Tag and GitHub Release were still created."

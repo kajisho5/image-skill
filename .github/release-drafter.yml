@@ -1,0 +1,93 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+categories:
+  - title: '💥 Breaking Changes'
+    labels:
+      - 'major'
+      - 'breaking'
+  - title: '✨ Features'
+    labels:
+      - 'minor'
+      - 'feature'
+      - 'enhancement'
+  - title: '🐛 Fixes'
+    labels:
+      - 'fix'
+      - 'bug'
+  - title: '🧰 Maintenance'
+    labels:
+      - 'patch'
+      - 'chore'
+      - 'refactor'
+      - 'ci'
+      - 'docs'
+      - 'test'
+
+change-template: '- $TITLE (#$NUMBER)'
+change-title-escapes: '\<*_&'
+exclude-labels:
+  - 'skip-changelog'
+
+version-resolver:
+  major:
+    labels:
+      - 'major'
+      - 'breaking'
+  minor:
+    labels:
+      - 'minor'
+      - 'feature'
+      - 'enhancement'
+  patch:
+    labels:
+      - 'patch'
+      - 'fix'
+      - 'bug'
+      - 'chore'
+      - 'refactor'
+      - 'ci'
+      - 'docs'
+      - 'test'
+  default: patch
+
+# Matches this repo's actual PR title convention (Conventional Commits, e.g.
+# "fix: ...", "ci: ...", "refactor(installer)!: ..."). Order matters: the
+# breaking-change (!) check runs first since a title can otherwise also match
+# its own type's label.
+autolabeler:
+  - label: 'breaking'
+    title:
+      - '/^\w+(\(.+\))?!:/'
+  - label: 'feature'
+    title:
+      - '/^feat(\(.+\))?:/i'
+  - label: 'fix'
+    title:
+      - '/^fix(\(.+\))?:/i'
+  - label: 'chore'
+    title:
+      - '/^chore(\(.+\))?:/i'
+  - label: 'refactor'
+    title:
+      - '/^refactor(\(.+\))?:/i'
+  - label: 'ci'
+    title:
+      - '/^ci(\(.+\))?:/i'
+    files:
+      - '.github/workflows/**'
+  - label: 'docs'
+    title:
+      - '/^docs(\(.+\))?:/i'
+    files:
+      - '**/*.md'
+  - label: 'test'
+    title:
+      - '/^test(\(.+\))?:/i'
+    files:
+      - 'tests/**'
+
+template: |
+  ## What's Changed
+
+  $CHANGES
