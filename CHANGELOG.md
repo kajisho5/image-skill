@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.2.1 (2026-09-11)
+
+## What's Changed
+
+## 🐛 Fixes
+
+- fix(release): use the real release-drafter dry-run input, not a made-up one (#10)
+
+## 🧰 Maintenance
+
+- fix(release): use the real release-drafter dry-run input, not a made-up one (#10)
+
 ## 0.2.0
 
 - **Breaking:** `bin/cli.js` replaced by `bin/install.js` with a new install

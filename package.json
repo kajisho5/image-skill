@@ -1,6 +1,6 @@
 {
   "name": "image-skill",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Give your coding agent a local image editor that does not overwrite originals.",
   "bin": {
     "image-skill": "bin/install.js"
