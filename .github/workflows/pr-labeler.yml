@@ -21,7 +21,7 @@ jobs:
       # main context to draft a release for), so this is already a real
       # label-writing run and should be, since labeling is the entire point.
       - name: Autolabel from title/files (release-drafter.yml rules)
-        uses: release-drafter/release-drafter@v6
+        uses: release-drafter/release-drafter@v7
         with:
           config-name: release-drafter.yml
         env:
