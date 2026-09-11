@@ -29,7 +29,8 @@ const heading = "# Changelog";
 const existing = fs.existsSync(changelogPath) ? fs.readFileSync(changelogPath, "utf8") : `${heading}\n`;
 
 const date = new Date().toISOString().slice(0, 10);
-const newSection = `## v${version} (${date})\n\n${body.trim()}\n`;
+const bodyText = body.trim() || "_No categorized changes recorded for this release._";
+const newSection = `## v${version} (${date})\n\n${bodyText}\n`;
 
 let updated;
 if (existing.startsWith(heading)) {

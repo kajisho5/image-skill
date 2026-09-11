@@ -16,10 +16,13 @@ jobs:
   autolabel:
     runs-on: ubuntu-latest
     steps:
+      # No dry-run/disable flag here: on a pull_request_target event
+      # release-drafter only runs its autolabeler logic (there's no push-to-
+      # main context to draft a release for), so this is already a real
+      # label-writing run and should be, since labeling is the entire point.
       - name: Autolabel from title/files (release-drafter.yml rules)
         uses: release-drafter/release-drafter@v6
         with:
           config-name: release-drafter.yml
-          disable-releaser: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

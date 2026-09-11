@@ -1,9 +1,5 @@
 # Changelog
 
-## v0.2.0 (2026-09-11)
-
-
-
 ## 0.2.0
 
 - **Breaking:** `bin/cli.js` replaced by `bin/install.js` with a new install
