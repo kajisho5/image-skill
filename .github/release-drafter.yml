@@ -52,13 +52,19 @@ version-resolver:
   default: patch
 
 # Matches this repo's actual PR title convention (Conventional Commits, e.g.
-# "fix: ...", "ci: ...", "refactor(installer)!: ..."). Order matters: the
-# breaking-change (!) check runs first since a title can otherwise also match
-# its own type's label.
+# "fix: ...", "ci: ...", "refactor(installer)!: ...").
+#
+# Deliberately no rule here for 'major'/'breaking': autolabeling those from a
+# title or body text pattern (even a narrow one like Conventional Commits'
+# "!:" marker) lets a major version bump - which downstream feeds
+# version-resolver below - fire without a human ever deciding it should. This
+# is exactly the failure mode that hit color-grading-skill: a PR whose body
+# happened to mention "BREAKING CHANGE" as prose (describing a bug, not
+# announcing one) got auto-labeled and would have shipped an unintended
+# vX.0.0 if merged while that label stuck. major/breaking labels are applied
+# by a human only, and version-resolver below still honors them when they
+# are.
 autolabeler:
-  - label: 'breaking'
-    title:
-      - '/^\w+(\(.+\))?!:/'
   - label: 'feature'
     title:
       - '/^feat(\(.+\))?:/i'
