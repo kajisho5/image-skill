@@ -49,15 +49,20 @@ jobs:
           echo "tag=$latest" >> "$GITHUB_OUTPUT"
           echo "version=${latest#v}" >> "$GITHUB_OUTPUT"
 
-      # disable-releaser: true means this makes zero changes to GitHub
-      # Releases - it only computes the next version + changelog body from
-      # merged PR labels since the last release. A true dry run.
+      # dry-run: true is release-drafter's actual documented input for this
+      # (an earlier version of this workflow used a made-up `disable-releaser`
+      # input, which the action silently ignored since it isn't real - it ran
+      # with dry-run effectively off and still produced empty resolved_version
+      # /body on this repo's first-ever run; see the "Fail if version is
+      # empty" guard below, added because of exactly that incident). dry-run
+      # prevents write operations - it only computes the next version and
+      # changelog body from merged PR labels since the last release.
       - name: Resolve next version and changelog body (dry run)
         id: drafter
         uses: release-drafter/release-drafter@v6
         with:
           config-name: release-drafter.yml
-          disable-releaser: true
+          dry-run: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -81,6 +86,20 @@ jobs:
           LATEST_TAG_VERSION: ${{ steps.latest_tag.outputs.version }}
           PKG_VERSION: ${{ steps.pkg.outputs.version }}
           RESOLVED_VERSION: ${{ steps.drafter.outputs.resolved_version }}
+
+      # Never proceed with an empty version string (e.g. release-drafter
+      # returning an empty resolved_version for any reason) - that would
+      # otherwise silently tag/commit/release as literally "v", corrupting
+      # the release history instead of failing loudly.
+      - name: Fail if the decided version is empty
+        run: |
+          if [ -z "$VERSION" ]; then
+            echo "::error::release version resolved to an empty string (auto_bump=$AUTO_BUMP) - refusing to tag/release. Check the 'Resolve next version' step's output."
+            exit 1
+          fi
+        env:
+          VERSION: ${{ steps.decide.outputs.version }}
+          AUTO_BUMP: ${{ steps.decide.outputs.auto_bump }}
 
       - name: Check whether this version is already tagged
         id: exists
@@ -141,7 +160,12 @@ jobs:
       # reasoning as the changelog step.
       - name: Write release notes to file
         if: steps.exists.outputs.tagged == 'false'
-        run: printf '%s\n' "$RELEASE_BODY" > "$RUNNER_TEMP/release-notes.md"
+        run: |
+          if [ -z "$(printf '%s' "$RELEASE_BODY" | tr -d '[:space:]')" ]; then
+            printf '_No categorized changes recorded for this release._\n' > "$RUNNER_TEMP/release-notes.md"
+          else
+            printf '%s\n' "$RELEASE_BODY" > "$RUNNER_TEMP/release-notes.md"
+          fi
         env:
           RELEASE_BODY: ${{ steps.drafter.outputs.body }}
 
