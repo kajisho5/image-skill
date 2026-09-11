@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.2 (2026-09-11)
+
+## What's Changed
+
+## 🐛 Fixes
+
+- fix(release-drafter): stop auto-labeling PRs major/breaking from text (#11)
+
 ## v0.2.1 (2026-09-11)
 
 ## What's Changed
