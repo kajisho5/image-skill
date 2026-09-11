@@ -59,7 +59,7 @@ jobs:
       # changelog body from merged PR labels since the last release.
       - name: Resolve next version and changelog body (dry run)
         id: drafter
-        uses: release-drafter/release-drafter@v6
+        uses: release-drafter/release-drafter@v7
         with:
           config-name: release-drafter.yml
           dry-run: true
