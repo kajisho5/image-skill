@@ -15,7 +15,7 @@ jobs:
     # binary.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: python3 -m unittest discover -s tests -v
       - run: python3 scripts/_contract.py doctor --json
       - run: python3 scripts/_contract.py contract --json
@@ -27,7 +27,7 @@ jobs:
     # locally by whoever happens to have ImageMagick installed.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install ImageMagick
         run: |
           sudo apt-get update
@@ -48,14 +48,14 @@ jobs:
     # is always skipped everywhere else.
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: python3 -m unittest discover -s tests -v
       - run: python3 scripts/_contract.py doctor --json
 
   installer:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
