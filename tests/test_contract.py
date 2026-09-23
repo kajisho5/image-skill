@@ -109,6 +109,19 @@ class DocsAgreeWithContractTests(unittest.TestCase):
         for name in _contract.TOOL_META:
             self.assertIn(f"`{name}.py`", skill)
 
+    def test_roadmap_has_100_items_with_valid_states(self):
+        rows = re.findall(r"^\| (RM-\d{3}) \| (\w+) \|\s*([^|]*?)\s*\| (.+) \|$", _read("docs", "roadmap.md"), re.M)
+        self.assertEqual([r[0] for r in rows], [f"RM-{i:03d}" for i in range(1, 101)])
+        released = set(re.findall(r"^## (\d+\.\d+\.\d+)$", _read("CHANGELOG.md"), re.M))
+        for rid, state, since, item in rows:
+            with self.subTest(rid):
+                self.assertIn(state, ("done", "planned", "idea"))
+                self.assertTrue(item.strip())
+                if state == "done":
+                    self.assertTrue(since.strip() == "main" or since.strip() in released, since)
+                else:
+                    self.assertEqual(since.strip(), "")
+
     def test_readme_names_every_tool(self):
         readme = _read("README.md")
         for name in _contract.TOOL_META:
