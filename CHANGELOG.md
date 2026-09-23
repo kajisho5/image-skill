@@ -6,6 +6,12 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
+(nothing yet)
+
+## 0.5.0
+
+_Automated release: version and notes generated from pull requests merged since 0.4.0._
+
 - New tools: `overlay.py` (logo or literal text - `%`, backslashes and a leading `@`
   escaped - at a position with margin/opacity; CJK text picks a CJK font or fails),
   `adjust.py` (explicit levels/brightness/contrast/saturation/blur/sharpen), `montage.py`
@@ -17,6 +23,8 @@ under "Unreleased" in a PR move into that release's section.
   folder per image).
 - The release-drafter-era `bump-version.js` and `prepend-changelog.js` are removed: the
   label-driven pipeline cut 0.4.0 end to end (bump commit, tag, Release, CHANGELOG).
+
+- feat: add overlay, adjust, montage, icons and preset tools (#15)
 
 ## 0.4.0
 
