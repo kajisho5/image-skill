@@ -6,6 +6,14 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
+- New: ImageMagick 6 without a `magick` command (Debian/Ubuntu's apt package) is used
+  directly: the tools run its `convert`, and `identify` for what `magick identify` did.
+  No shim is needed any more. `doctor --json` reports `backends.magick.kind` as `"magick"`
+  or `"imagemagick6"`. A `convert` that is not ImageMagick 6, and any `convert` on Windows,
+  is never used. CI's Ubuntu job now runs the whole suite on IM6 with no `magick`
+  command.
+- Roadmap rows marked `| done | main |` get the version of the release that ships them
+  (`bump_roadmap_md.py`).
 (nothing yet)
 
 ## 0.6.2

@@ -13,7 +13,7 @@ import icons  # noqa: E402
 import montage  # noqa: E402
 import overlay  # noqa: E402
 import preset  # noqa: E402
-from _common import ImageSkillError, find_fonts, identify_dims, which_magick  # noqa: E402
+from _common import ImageSkillError, find_fonts, identify_dims, magick_argv, which_magick  # noqa: E402
 from fixtures import write_png  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -140,7 +140,7 @@ class ComposeTests(unittest.TestCase):
         names = sorted(os.path.basename(f["path"]) for f in payload["files"])
         self.assertEqual(names, ["apple-touch-icon.png", "favicon.ico", "icon-192x192.png", "icon-32x32.png",
                                  "icon-512x512.png"])
-        frames = subprocess.run([which_magick(), "identify", "-format", "%w\n", os.path.join(out_dir, "favicon.ico")],
+        frames = subprocess.run(magick_argv([which_magick(), "identify", "-format", "%w\n", os.path.join(out_dir, "favicon.ico")]),
                                 capture_output=True, text=True, check=True).stdout.split()
         self.assertEqual(sorted(int(f) for f in frames), [16, 32, 48])
         self.assertEqual(identify_dims(os.path.join(out_dir, "apple-touch-icon.png")), (180, 180))

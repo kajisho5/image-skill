@@ -63,8 +63,11 @@ Every tool also reports `mutates_input: false`. An existing output is refused un
 
 ## Backends
 
-`backends` lists what can run a tool: `magick` (ImageMagick 7's `magick`, or a
-compatible command) and/or `sips` (macOS). `requires_magick: true` means there is no
+`backends` lists what can run a tool: `magick` and/or `sips` (macOS). `magick` is
+ImageMagick 7's `magick` command or, when there is none, ImageMagick 6's
+`convert`/`identify` (Debian/Ubuntu's apt package): `doctor --json` names which one it
+found in `backends.magick.kind` (`"magick"` or `"imagemagick6"`). A `convert` that is not
+ImageMagick 6, and any `convert` on Windows, is never used. `requires_magick: true` means there is no
 `sips` path. `npx imagemagick-skill doctor --json` reports, per tool, whether this machine
 can run it (`tools.<name>.usable`) and which backend it would use.
 

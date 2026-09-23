@@ -8,8 +8,9 @@ still carry GPS.
 `contract --json` are the authority on what exists today. Every item below has one
 state:
 
-- **done** — merged. The *Since* column names the release, or `main` for
-  docs/test-only work that ships with no release of its own.
+- **done** — merged. The *Since* column names the release it shipped in, or `main`
+  when it is merged but not released yet; the release automation replaces `main` with the
+  version it cuts.
 - **planned** — agreed to be in scope. Not started, or started on a branch only.
 - **idea** — worth writing down. Not decided, and it may conflict with a design rule
   (no network, standard library only, the user decides every value); that has to be
@@ -65,11 +66,11 @@ Item IDs never change and are never reused. A dropped item stays in the table as
 | RM-043 | done | 0.6.1 | GPS detection from the raw EXIF block, including HEIC on ImageMagick 6 |
 | RM-044 | done | 0.6.1 | `strip` deletes and fails an output that still has, or may have, GPS |
 | RM-045 | done | 0.6.1 | Package metadata follows the renamed `kajisho5/image-skill` (npm provenance is case-sensitive) |
-| RM-046 | done | main | README with reproducible demo GIFs (`demos/build.py`) and a command-checked README (`check_readme.py`) |
-| RM-047 | done | main | Tests: every tool leaves its inputs byte-identical; `--dry-run` never creates a file |
-| RM-048 | planned | | Detect ImageMagick 6 (`convert`/`identify`) on Linux without a `magick` shim |
+| RM-046 | done | 0.6.2 | README with reproducible demo GIFs (`demos/build.py`) and a command-checked README (`check_readme.py`) |
+| RM-047 | done | 0.6.2 | Tests: every tool leaves its inputs byte-identical; `--dry-run` never creates a file |
+| RM-048 | done | main | ImageMagick 6 (`convert`/`identify`, Debian/Ubuntu apt) used directly, no `magick` shim needed |
 | RM-049 | planned | | `doctor` proves HEIC read and write with a real round-trip (an encoder-only libheif passes the mode flags) |
-| RM-050 | planned | | Publish to npm (needs the `NPM_TOKEN` repository secret) |
+| RM-050 | done | 0.6.2 | Published to npm with provenance (`NPM_TOKEN` secret; repository renamed to `kajisho5/imagemagick-skill`) |
 | RM-051 | planned | | Windows CI job with ImageMagick 7 |
 | RM-052 | planned | | `doctor` field for AVIF read/write, and AVIF in `convert`/`optimize` where the build has it |
 | RM-053 | planned | | `probe` reports the EXIF orientation value and pixel density |
