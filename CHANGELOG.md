@@ -6,6 +6,12 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
+(nothing yet)
+
+## 0.6.1
+
+_Automated release: version and notes generated from pull requests merged since 0.6.0._
+
 - Fix: `probe` reported `has_gps: false` for HEIC photos that carry GPS. ImageMagick 6
   attaches a HEIC's EXIF as a bare TIFF block and never parses it into `exif:*`
   properties, so the old `%[EXIF:GPSLatitude]` check missed it. GPS detection now reads
@@ -14,6 +20,8 @@ under "Unreleased" in a PR move into that release's section.
 - Fix: `package.json` / `.claude-plugin/plugin.json` point at the repository's current
   name, `kajisho5/image-skill` (renamed from `Image-skill`). npm provenance compares
   `repository.url` case-sensitively, so the old casing would have failed `npm publish`.
+
+- fix: detect GPS in HEIC EXIF that ImageMagick 6 does not parse (#17)
 
 ## 0.6.0
 

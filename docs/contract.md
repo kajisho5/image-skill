@@ -12,7 +12,7 @@ the scripts.
 | Field | Meaning |
 | --- | --- |
 | `contract_version` | shape of this document (`1.0`) |
-| `skill.version` | the npm / package.json version (`0.6.0`) |
+| `skill.version` | the npm / package.json version (`0.6.1`) |
 
 `version` and `name` at the top level of the JSON repeat `skill.version` and `skill.id`;
 they predate `skill` and stay for compatibility.
@@ -96,7 +96,7 @@ automation refuses to choose a major version by itself.
   "ok": true,
   "name": "imagemagick-skill",
   "contract_version": "1.0",
-  "skill": {"id": "imagemagick-skill", "version": "0.6.0", "execution_mode": "local"},
+  "skill": {"id": "imagemagick-skill", "version": "0.6.1", "execution_mode": "local"},
   "execution": {"shell": false, "network": false, "input_mutation": false, "arbitrary_executables": false},
   "tools": [{"name": "probe", "role": "analysis", "backends": ["magick", "sips"], "input_schema": {"...": "..."}}]
 }
