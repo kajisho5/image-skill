@@ -6,7 +6,18 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
-(nothing yet)
+- Docs: README rewritten in the shape of ffmpeg-skill's, with a 2x2 grid of demo GIFs,
+  agent request examples, a tools table with the `sips` fallback for each tool, MCP and
+  plugin-marketplace install, an ImageMagick 6 / 7 / sips compatibility table and the
+  `magick` shim Ubuntu's ImageMagick 6 needs.
+- `demos/build.py` rebuilds `docs/demos/*.gif`, `docs/demos.md` and `assets/logo.png`
+  from inputs it draws itself. Every number on a frame is read from the `--json` result of
+  the command shown with it. Development only.
+- `.github/scripts/check_readme.py` runs every README command in a throwaway HOME against
+  an `npm pack` tarball, including install -> doctor -> `--uninstall`.
+- Tests: every tool is run for real and must leave its inputs byte-identical; every
+  writing tool's `--dry-run` must create no file; the README must name every tool and
+  show demo GIFs that exist.
 
 ## 0.6.1
 

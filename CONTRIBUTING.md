@@ -61,6 +61,23 @@ A tool is `scripts/<name>.py` with `build_parser()` (a `JSONArgumentParser`),
 Then regenerate the contract page with `python3 .github/scripts/contract_md.py --write`
 and update `SKILL.md`, `README.md` and `CHANGELOG.md` ("Unreleased").
 
+## Demos and README commands
+
+```bash
+python3 demos/build.py                 # rebuild docs/demos/*.gif, docs/demos.md, assets/logo.png
+python3 .github/scripts/check_readme.py
+```
+
+`demos/build.py` draws its own inputs, a synthetic landscape and a synthetic logo. Never
+add a photograph, a person or anyone else's artwork to it. Every number on a frame must
+come from the `--json` result of the command shown with it. It needs ImageMagick, plus
+`heif-enc` (libheif-examples) or a HEIC-writing ImageMagick. The skill itself must never
+depend on either, or on ffmpeg.
+
+`check_readme.py` runs every ```bash block in `README.md`, in order, in a throwaway HOME.
+`npx imagemagick-skill` points at an `npm pack` tarball of the checkout. Run it after
+changing a README command, and paste its summary into the PR.
+
 ## Pull requests
 
 - Keep PRs focused - one fix or one small feature per PR - and explain *why*.
