@@ -11,6 +11,9 @@ under "Unreleased" in a PR move into that release's section.
   properties, so the old `%[EXIF:GPSLatitude]` check missed it. GPS detection now reads
   the raw EXIF block itself (standard library only) for every format, and `strip`
   refuses (and removes) an output whose EXIF still has GPS or cannot be parsed.
+- Fix: `package.json` / `.claude-plugin/plugin.json` point at the repository's current
+  name, `kajisho5/image-skill` (renamed from `Image-skill`). npm provenance compares
+  `repository.url` case-sensitively, so the old casing would have failed `npm publish`.
 
 ## 0.6.0
 
