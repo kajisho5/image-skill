@@ -1,6 +1,6 @@
 # Roadmap
 
-The released version today is **0.5.0** (notes in CHANGELOG.md); **0.3.0** — the package is `imagemagick-skill` on npm (renamed
+The released version today is **0.6.0** (notes in CHANGELOG.md); **0.3.0** — the package is `imagemagick-skill` on npm (renamed
 from `image-skill`, a name that belongs to another author), with a migration that removes
 an old copy of this project only when it is provably ours, and `--codex` installing where
 Codex actually reads skills.

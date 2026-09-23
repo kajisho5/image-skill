@@ -6,12 +6,20 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
+(nothing yet)
+
+## 0.6.0
+
+_Automated release: version and notes generated from pull requests merged since 0.5.0._
+
 - New: MCP server (`mcp/server.py`, standard library only), installed next to the
   skill and shipped in the npm package. Tools, descriptions and input schemas are
   generated from the contract; argument mapping back to argv too. Serves the
   `initialize` handshake (2024-11-05 - 2025-11-25) and 2026-07-28's per-request
   versioning with `server/discover`. `--list` / `--call` for shells. Config examples for
   Claude Code, Claude Desktop and Cursor in the README.
+
+- feat: add a stdio MCP server generated from the contract (#16)
 
 ## 0.5.0
 
