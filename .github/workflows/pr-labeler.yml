@@ -20,7 +20,7 @@ jobs:
       # does not have): this job only applies labels and never touches draft releases.
       # Versions are resolved by .github/scripts/resolve_version.py from these labels.
       - name: Autolabel from title/files (release-drafter.yml rules)
-        uses: release-drafter/release-drafter@v6
+        uses: release-drafter/release-drafter@v7
         with:
           config-name: release-drafter.yml
           disable-releaser: true
