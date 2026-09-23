@@ -6,6 +6,12 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
+(nothing yet)
+
+## 0.6.2
+
+_Automated release: version and notes generated from pull requests merged since 0.6.1._
+
 - Fix: package metadata points at the renamed repository, `kajisho5/imagemagick-skill`
   (npm provenance rejects a `repository.url` that does not match the repository that
   builds the package). A CI test now pins `package.json` and `.claude-plugin/plugin.json`
@@ -25,6 +31,10 @@ under "Unreleased" in a PR move into that release's section.
 - Tests: every tool is run for real and must leave its inputs byte-identical; every
   writing tool's `--dry-run` must create no file; the README must name every tool and
   show demo GIFs that exist.
+
+- fix: point package metadata at the renamed kajisho5/imagemagick-skill (#20)
+- docs: roadmap as 100 numbered items (#19)
+- docs: rewrite README with reproducible demo GIFs (#18)
 
 ## 0.6.1
 
