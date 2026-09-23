@@ -6,6 +6,12 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
+(nothing yet)
+
+## 0.4.0
+
+_Automated release: version and notes generated from pull requests merged since 0.3.0._
+
 - New tools: `look.py` (labelled preview sheet / before-after pair for the agent to
   open), `compare.py` (SSIM, PSNR, changed-pixel share, optional heatmap, `--fail-below`
   gate), `optimize.py` (fit a `--max-kb` budget by quality search, same dimensions, fails
@@ -31,6 +37,9 @@ under "Unreleased" in a PR move into that release's section.
   `evals/agent_prompts.json`.
 - `package.json`'s `repository.url` uses the repository's real casing (`Image-skill`):
   npm provenance compares it case-sensitively.
+
+- feat: add look, compare, optimize, crop, pad and rotate tools (#14)
+- chore: align repo structure and release automation with ffmpeg-skill (#13)
 
 ## 0.3.0
 
