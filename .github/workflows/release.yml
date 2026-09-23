@@ -46,7 +46,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # The tip of main, not the triggering SHA: with two quick merges the second run
           # is queued and must bump on top of whatever the first one already pushed.
