@@ -253,5 +253,77 @@
   "expect": [
    "look.py|batch.py"
   ]
+ },
+ {
+  "id": "watermark-text-ja",
+  "prompt": "FIXTURES/hero.jpg の右下に白文字で「© 2026 kajisho5」と入れて。文字サイズは 48、余白 30px。OUTDIR に保存して、仕上がりも見せて。",
+  "expect": [
+   "probe.py",
+   "overlay.py",
+   "check.py",
+   "look.py"
+  ]
+ },
+ {
+  "id": "logo-overlay",
+  "prompt": "Put FIXTURES/logo.png in the top-right corner of FIXTURES/hero.jpg at 20% of the photo's width, 70% opacity, 24px margin. Save to OUTDIR.",
+  "expect": [
+   "probe.py",
+   "overlay.py",
+   "check.py",
+   "look.py"
+  ]
+ },
+ {
+  "id": "adjust-explicit",
+  "prompt": "Raise the brightness of FIXTURES/hero.jpg by 15 and the contrast by 10, then save it to OUTDIR.",
+  "expect": [
+   "adjust.py",
+   "check.py",
+   "look.py"
+  ]
+ },
+ {
+  "id": "adjust-vague",
+  "prompt": "Make FIXTURES/hero.jpg look better.",
+  "expect": [],
+  "ask": true,
+  "note": "No values were given; adjust.py has no auto mode, so the agent asks what to change and by how much."
+ },
+ {
+  "id": "readme-strip",
+  "prompt": "Put FIXTURES/screenshot.png and FIXTURES/logo.png side by side on a white background with a 16px gap and their file names underneath, for our README. Save to OUTDIR.",
+  "expect": [
+   "montage.py",
+   "check.py|look.py"
+  ]
+ },
+ {
+  "id": "favicons",
+  "prompt": "Make a favicon.ico and the usual web icons from our logo. The source is FIXTURES/logo.png. Put them in OUTDIR/icons and tell me the HTML to add.",
+  "expect": [
+   "probe.py",
+   "crop.py|pad.py",
+   "icons.py"
+  ],
+  "note": "logo.png is not square, so icons.py refuses it; the agent squares it with crop or pad first (asking which, and the pad colour, if the user didn't say)."
+ },
+ {
+  "id": "preset-og",
+  "prompt": "Make an Open Graph image from FIXTURES/hero.jpg at the size Facebook documents, cropping to fill. Save to OUTDIR.",
+  "expect": [
+   "probe.py",
+   "preset.py",
+   "check.py",
+   "look.py"
+  ]
+ },
+ {
+  "id": "preset-x-undocumented",
+  "prompt": "Resize FIXTURES/hero.jpg to the official X (Twitter) card size.",
+  "expect": [
+   "preset.py"
+  ],
+  "note": "There is no X preset because X no longer documents a size; the agent says so (preset.py --list shows what exists) and asks for dimensions instead of inventing them."
  }
 ]

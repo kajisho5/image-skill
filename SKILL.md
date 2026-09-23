@@ -1,6 +1,6 @@
 ---
 name: imagemagick-skill
-description: Local ImageMagick image editing for files that land in a repo - iPhone HEIC/JPEG, screenshots, OG images, README assets. Use when asked to convert, resize, thumbnail, crop, pad, rotate, compress to a file size, make a WebP/OG image, strip GPS/EXIF, trim a border, compare two images, check an image's format/dimensions, or show/preview images. Not for video, GIF animation, frame extraction, face recognition, background removal, generative AI, or RAW/ICC color work.
+description: Local ImageMagick image editing for files that land in a repo - iPhone HEIC/JPEG, screenshots, OG images, README assets. Use when asked to convert, resize, thumbnail, crop, pad, rotate, compress to a file size, make a WebP/OG/social-size image, add a logo or watermark text, adjust brightness/contrast/saturation/sharpness, put images side by side, make a favicon/icon set, strip GPS/EXIF, trim a border, compare two images, check an image's format/dimensions, or show/preview images. Not for video, GIF animation, frame extraction, face recognition, background removal, generative AI, or RAW/ICC color work.
 ---
 
 # imagemagick-skill
@@ -46,6 +46,10 @@ speaks JSON and never overwrites its input.
    ratios, fill colours, file-size budgets and formats come from the user or the
    calling task - this skill executes, it doesn't design. If no size was given
    for a resize/thumbnail, or no colour for padding, ask instead of guessing.
+   `preset.py` sizes (og, instagram-*, youtube-thumbnail, ...) are published
+   platform sizes: use one only when the user names that platform or preset, and
+   still let the user choose `--mode` (fill crops, pad letterboxes). `adjust.py`
+   takes explicit values only - never invent "a bit brighter" numbers; ask.
 5. **Check the environment before relying on a format.** Run
    `python3 scripts/_contract.py doctor --json` once per session before
    using `convert`/`resize`/`thumb` for HEIC or WebP, or before `strip`/
@@ -98,12 +102,18 @@ machine-readable spec (required/optional args per tool).
 | `check.py` | Verify an output: opens, matches size/format, didn't overwrite input |
 | `look.py` | Labelled preview sheet (or `--pair` before/after) to open and look at (magick only) |
 | `compare.py` | SSIM / PSNR / changed-pixel share of two same-size images, optional heatmap (`-o`), `--fail-below` gate (magick only) |
-| `batch.py` | Run a tool over every image in a folder (`look` makes one sheet; `compare` pairs with `--against DIR`) |
+| `overlay.py` | Logo (`--image`, `--scale`) or text (`--text`, `--font-size`, `--color`) at a `--position` with `--margin`/`--opacity`; Japanese text gets a CJK font (magick only) |
+| `adjust.py` | Explicit `--levels`, `--brightness`, `--contrast`, `--saturation`, `--blur`, `--sharpen`; no "auto" (magick only) |
+| `montage.py` | Row or `--cols` grid with a required `--background`, `--gap`, `--labels` - e.g. README comparisons (magick only) |
+| `icons.py` | favicon.ico (16/32/48) + PNG icons (32/192/512) + apple-touch-icon.png and the HTML/manifest entries, from one square image (magick only) |
+| `preset.py` | Named published sizes with their source (`--list`), `--mode fill\|fit\|pad` |
+| `batch.py` | Run a tool over every image in a folder (`look`/`montage` make one sheet; `icons` one folder per image; `compare` pairs with `--against DIR`) |
 | `_contract.py` | `contract` (tool spec) / `doctor` (environment check) |
 
 Backend: ImageMagick `magick` first; macOS `sips` covers a reduced subset when
 `magick` isn't installed (`convert`, `resize` fit, `thumb`, centred `crop --aspect`,
 centred `pad` with a `#RRGGBB` colour, a single 90-degree `rotate` or flip, JPEG/HEIC
-`optimize`). `strip`, `trim`, `look` and `compare` always require `magick` - doctor's
+`optimize`, `preset` fill/fit). `strip`, `trim`, `look`, `compare`, `overlay`,
+`adjust`, `montage` and `icons` always require `magick` - doctor's
 `tools` field says what this machine can run. No cloud calls, no API keys, no pip dependencies -
 Python 3.9 standard library plus whichever binary is already on the machine.

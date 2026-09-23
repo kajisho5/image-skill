@@ -60,6 +60,21 @@ def aspect_canvas(width, height, ratio_w, ratio_h):
     return width, max(height, math.ceil(width / target))
 
 
+def pad_command(backend, binary, input_path, output_path, in_dims, canvas, color, gravity):
+    """(argv, (x, y)) that places an in_dims image on a canvas-sized fill."""
+    (in_w, in_h), (canvas_w, canvas_h) = in_dims, canvas
+    x, y = gravity_offset(gravity, canvas_w, canvas_h, in_w, in_h)
+    if backend == "magick":
+        # An explicit offset rather than -gravity: the position reported is then exactly
+        # the one ImageMagick used.
+        cmd = [binary, input_path, "-auto-orient", "-background", color, "-gravity", "northwest",
+               "-extent", f"{canvas_w}x{canvas_h}-{x}-{y}", output_path]
+    else:
+        cmd = [binary, "--padToHeightWidth", str(canvas_h), str(canvas_w), "--padColor", color.lstrip("#").upper(),
+               input_path, "--out", output_path]
+    return cmd, (x, y)
+
+
 def run_pad(args):
     require_input(args.input)
     prepare_output([args.input], args.output, args.overwrite)
@@ -88,16 +103,8 @@ def run_pad(args):
             raise ImageSkillError(
                 f"canvas {canvas_w}x{canvas_h} is smaller than the {in_w}x{in_h} image; pad never shrinks - resize first"
             )
-    x, y = gravity_offset(args.gravity, canvas_w, canvas_h, in_w, in_h)
-
-    if backend == "magick":
-        # An explicit offset rather than -gravity: the position reported below is then
-        # exactly the one ImageMagick used.
-        cmd = [binary, args.input, "-auto-orient", "-background", args.color, "-gravity", "northwest",
-               "-extent", f"{canvas_w}x{canvas_h}-{x}-{y}", args.output]
-    else:
-        cmd = [binary, "--padToHeightWidth", str(canvas_h), str(canvas_w), "--padColor", args.color.lstrip("#").upper(),
-               args.input, "--out", args.output]
+    cmd, (x, y) = pad_command(backend, binary, args.input, args.output, (in_w, in_h), (canvas_w, canvas_h),
+                              args.color, args.gravity)
     run(cmd, dry_run=args.dry_run)
     if args.dry_run:
         return {"dry_run": True, "would_run": cmd}

@@ -3,9 +3,10 @@
 separate output folder. Never overwrites inputs or existing outputs; a single bad file
 is recorded as a failure and the rest of the batch still runs.
 
-  per-file tools (convert, resize, thumb, strip, trim, crop, pad, rotate, optimize):
-      one output per input, same name (extension from --ext when given)
-  look: one preview sheet of the whole folder, written as look.<ext> (default png)
+  per-file tools (convert, resize, thumb, strip, trim, crop, pad, rotate, optimize,
+      adjust, overlay, preset): one output per input, same name (extension from --ext)
+  look, montage: one sheet of the whole folder, written as <tool>.<ext> (default png)
+  icons: one icon folder per input, named after it
   compare: each file against the file of the same name in --against DIR; a heatmap
       per pair is written into the output folder
 """
@@ -17,10 +18,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import ImageSkillError, JSONArgumentParser, fail, succeed, wants_json  # noqa: E402
 
-PER_FILE_TOOLS = ("convert", "resize", "thumb", "strip", "trim", "crop", "pad", "rotate", "optimize")
-AGGREGATE_TOOLS = ("look",)
+PER_FILE_TOOLS = ("convert", "resize", "thumb", "strip", "trim", "crop", "pad", "rotate", "optimize",
+                  "adjust", "overlay", "preset")
+AGGREGATE_TOOLS = ("look", "montage")
 PAIRED_TOOLS = ("compare",)
-TOOL_MODULES = {name: name for name in PER_FILE_TOOLS + AGGREGATE_TOOLS + PAIRED_TOOLS}
+DIR_TOOLS = ("icons",)
+TOOL_MODULES = {name: name for name in PER_FILE_TOOLS + AGGREGATE_TOOLS + PAIRED_TOOLS + DIR_TOOLS}
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".heic", ".heif", ".tif", ".tiff", ".bmp", ".webp", ".gif"}
 
@@ -117,6 +120,10 @@ def run_batch(args):
                 results.append(dict(entry, ok=False, reason=f"no file named {os.path.basename(src)} in {args.against}"))
                 continue
             results.append(attempt(entry, [src, other, "-o", dest] + dry + tool_args))
+    elif args.tool in DIR_TOOLS:
+        for src in files:
+            dest = os.path.join(out_dir, os.path.splitext(os.path.basename(src))[0])
+            results.append(attempt({"file": src, "output": dest}, [src, "-o", dest] + dry + tool_args))
     else:
         for src in files:
             base = os.path.splitext(os.path.basename(src))[0]

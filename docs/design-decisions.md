@@ -49,6 +49,13 @@ say which sentence here no longer holds.
   was used. Tests: `test_quality_that_changes_nothing_switches_to_target_size`,
   `test_webp_fits_by_quality_or_target_size`.
 
+- **`overlay` refuses an overlay larger than the base image** rather than cropping it,
+  and never changes the base image's size. Test: `test_overlay_larger_than_base_is_refused`.
+
+- **`icons` needs a square source at least as large as the largest icon.** Non-square
+  sources would be distorted or cropped by a guess; small ones would be upscaled into blur.
+  Test: `test_icons_refuse_non_square_and_upscaling`.
+
 ## Pixels
 
 - **Every writing tool bakes EXIF orientation into the pixels (`-auto-orient`).** A
@@ -80,6 +87,19 @@ say which sentence here no longer holds.
   backslashes, and text starting with `@` is read from a *file* - so a caption
   "@kajisho5" would otherwise read a file named kajisho5. Test:
   `test_leading_at_is_text_not_a_file`.
+
+- **`adjust` has no "auto" or "enhance"**, and every value is range-checked. How an
+  image should look is the caller's decision; the skill only applies numbers it was given.
+  Test: `test_adjust_needs_an_operation_and_valid_ranges`.
+
+- **Every `preset.py` size cites the platform's own documentation, and a platform without
+  a current official size gets no preset** (X/Twitter's docs no longer state one). A size
+  from a blog post is a guess with a URL. `--mode` has no default. Tests:
+  `test_every_preset_cites_a_source`, `test_no_preset_without_an_official_source`.
+
+- **Japanese/Chinese/Korean text needs a CJK font, or `overlay` fails.** A Latin-only
+  font renders those characters as empty boxes, which would otherwise be reported as
+  success. Test: `test_japanese_text_picks_a_cjk_font`.
 
 - **`look` has defaults (tile size, columns) where editing tools have none.** Its sheet
   is for the agent to inspect, never a deliverable. Test:

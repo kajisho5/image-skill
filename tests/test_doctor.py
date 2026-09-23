@@ -43,7 +43,8 @@ class TestContract(unittest.TestCase):
         self.assertEqual(
             names,
             {"probe", "convert", "resize", "thumb", "strip", "trim", "check", "batch",
-             "look", "compare", "optimize", "crop", "pad", "rotate"},
+             "look", "compare", "optimize", "crop", "pad", "rotate",
+             "adjust", "overlay", "montage", "icons", "preset"},
         )
         self.assertTrue(payload["ok"])
         self.assertIn("rules", payload)

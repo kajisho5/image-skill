@@ -8,6 +8,7 @@
   "files": [
     "bin/install.js",
     "scripts/*.py",
+    "scripts/presets.json",
     "docs/contract.md",
     "SKILL.md",
     "README.md",

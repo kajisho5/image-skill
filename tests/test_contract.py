@@ -47,7 +47,7 @@ class ContractShapeTests(unittest.TestCase):
             self.assertTrue(tool["supports_json"], name)
             self.assertFalse(tool["mutates_input"], name)
             if tool["writes_output"] and name != "batch" and not tool["output_optional"]:
-                self.assertIn("output", tool["input_schema"]["required"], name)
+                self.assertTrue({"output", "output_dir"} & set(tool["input_schema"]["required"]), name)
                 self.assertIn("overwrite", props, name)
             if tool["writes_output"]:
                 self.assertTrue(tool["supports_dry_run"], name)
@@ -125,6 +125,8 @@ class OutputSchemaConformanceTests(unittest.TestCase):
         self.dir_in = os.path.join(self.tmp.name, "folder")
         os.makedirs(self.dir_in)
         write_solid_png(os.path.join(self.dir_in, "a.png"), 30, 20)
+        self.square = os.path.join(self.tmp.name, "square.png")
+        write_solid_png(self.square, 600, 600)
 
     def invocations(self):
         o = lambda n: os.path.join(self.tmp.name, n)  # noqa: E731
@@ -142,6 +144,11 @@ class OutputSchemaConformanceTests(unittest.TestCase):
             "crop": [self.src, "-o", o("crop.png"), "--aspect", "1:1"],
             "pad": [self.src, "-o", o("pad.png"), "--aspect", "1:1", "--color", "white"],
             "rotate": [self.src, "-o", o("rot.png"), "--degrees", "90"],
+            "adjust": [self.src, "-o", o("adj.png"), "--contrast", "10"],
+            "overlay": [self.src, "-o", o("ov.png"), "--image", os.path.join(self.dir_in, "a.png"), "--position", "center"],
+            "montage": [self.src, os.path.join(self.dir_in, "a.png"), "-o", o("mont.png"), "--background", "white"],
+            "icons": [self.square, "-o", o("icons")],
+            "preset": [self.src, "-o", o("preset.png"), "--preset", "pwa-icon-192", "--mode", "fit"],
             "batch": ["thumb", "-i", self.dir_in, "-o", o("batch-out"), "--", "--long-edge", "10"],
         }
 
