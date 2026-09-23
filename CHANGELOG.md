@@ -1,36 +1,48 @@
 # Changelog
 
-## v0.3.0 (2026-09-23)
+Releases are cut automatically when a PR merges (see CONTRIBUTING.md, "Releasing"): the
+version comes from the merged PRs' labels and a section is added below "Unreleased". Notes written
+under "Unreleased" in a PR move into that release's section.
 
-## What's Changed
+## Unreleased
 
-## ✨ Features
+- Release automation moved to label-driven `resolve_version.py` (same design as
+  ffmpeg-skill): no release for chore/ci/docs/test-only merges, no automatic major,
+  `package.json` / `.claude-plugin/plugin.json` / `docs/contract.md` / `docs/roadmap.md`
+  bumped together, npm publish with provenance when `NPM_TOKEN` is set.
+- The contract derives every tool's `input_schema` from its own argparse parser and adds
+  `id`, `role`, `backends`, `requires_magick`, `supports_json`, `supports_dry_run`,
+  `mutates_input`, `verify`, `output_schema`, plus top-level `contract_version`, `skill`,
+  `execution` and `result_shapes`. Every existing key is unchanged.
+- New: `docs/contract.md` (tools section generated from the contract and checked in CI),
+  `docs/design-decisions.md`, `docs/roadmap.md`, `.claude-plugin/plugin.json` and
+  `marketplace.json`, `AGENTS.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
+  `evals/agent_prompts.json`.
+- `package.json`'s `repository.url` uses the repository's real casing (`Image-skill`):
+  npm provenance compares it case-sensitively.
 
-- feat: rename npm package to imagemagick-skill and migrate old image-skill installs (#12)
+## 0.3.0
 
-## 🧰 Maintenance
+- **Renamed to `imagemagick-skill`.** The npm name `image-skill` belongs to an unrelated
+  package by another author, so `npx image-skill` never installed this skill. Install with
+  `npx imagemagick-skill`; the skill directory is now `imagemagick-skill`.
+- Installing or uninstalling removes an old `image-skill` copy next to the target only when
+  its contents prove it came from this repository (SKILL.md name, file layout, the
+  `_contract.py` marker every release carried, `package.json` repository). Anything else is
+  left in place with a warning that says why.
+- `--codex` installs to `~/.agents/skills/imagemagick-skill`, where Codex reads user skills;
+  0.2.x's `~/.codex/skills` copy was never seen by Codex and is migrated away.
+- CI installs the packed tarball through `npx` (install, doctor, uninstall) on every PR.
 
-- feat: rename npm package to imagemagick-skill and migrate old image-skill installs (#12)
+## 0.2.2
 
-## v0.2.2 (2026-09-11)
+- The PR autolabeler no longer applies `breaking` from a title pattern: a major bump only
+  happens when a person applies the label (#11).
 
-## What's Changed
+## 0.2.1
 
-## 🐛 Fixes
-
-- fix(release-drafter): stop auto-labeling PRs major/breaking from text (#11)
-
-## v0.2.1 (2026-09-11)
-
-## What's Changed
-
-## 🐛 Fixes
-
-- fix(release): use the real release-drafter dry-run input, not a made-up one (#10)
-
-## 🧰 Maintenance
-
-- fix(release): use the real release-drafter dry-run input, not a made-up one (#10)
+- Release workflow fix (#10). Correction recorded in 0.3.0's PR: release-drafter v6 has no
+  `dry-run` input; the change made it run live, which left a stray draft release.
 
 ## 0.2.0
 

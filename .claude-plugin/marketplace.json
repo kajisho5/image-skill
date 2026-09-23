@@ -1,0 +1,14 @@
+{
+  "name": "imagemagick-skill",
+  "owner": {
+    "name": "kajisho5",
+    "url": "https://github.com/kajisho5"
+  },
+  "plugins": [
+    {
+      "name": "imagemagick-skill",
+      "source": "./",
+      "description": "Local ImageMagick image editing for coding agents that never overwrites originals."
+    }
+  ]
+}

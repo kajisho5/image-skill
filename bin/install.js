@@ -116,7 +116,7 @@ function legacyNotOursReason(dir) {
       return "its package.json is not valid JSON";
     }
     const repo = typeof pkg.repository === "string" ? pkg.repository : (pkg.repository && pkg.repository.url) || "";
-    if (pkg.name !== LEGACY_NAME || !repo.includes(LEGACY_REPO)) {
+    if (pkg.name !== LEGACY_NAME || !repo.toLowerCase().includes(LEGACY_REPO)) {
       return `its package.json is not ${LEGACY_NAME} from ${LEGACY_REPO}`;
     }
   }

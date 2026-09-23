@@ -1,0 +1,181 @@
+[
+ {
+  "id": "og-webp",
+  "prompt": "Make FIXTURES/hero.jpg into a 1200x630 WebP for an Open Graph card, remove the GPS location, and keep the original untouched. Save it in OUTDIR and tell me what you did.",
+  "expect": [
+   "probe.py",
+   "resize.py",
+   "strip.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "og-webp-ja",
+  "prompt": "FIXTURES/hero.jpg を 1200x630 の OG 用 WebP にして、位置情報(GPS)を消して。元の写真は残すこと。出力は OUTDIR に。",
+  "expect": [
+   "probe.py",
+   "resize.py",
+   "strip.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "thumb-256",
+  "prompt": "I need a 256px thumbnail (longest side) of FIXTURES/hero.jpg in OUTDIR.",
+  "expect": [
+   "probe.py",
+   "thumb.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "strip-gps",
+  "prompt": "Before I post FIXTURES/hero.jpg online, make a copy with the location data removed. Save to OUTDIR.",
+  "expect": [
+   "probe.py",
+   "strip.py",
+   "check.py|probe.py"
+  ]
+ },
+ {
+  "id": "inspect-only",
+  "prompt": "What are the pixel dimensions and format of FIXTURES/hero.jpg, and does it contain GPS data? Don't change anything.",
+  "expect": [
+   "probe.py"
+  ]
+ },
+ {
+  "id": "trim-screenshot",
+  "prompt": "FIXTURES/screenshot.png has a big white border around it. Crop the border off and save the result in OUTDIR.",
+  "expect": [
+   "probe.py",
+   "trim.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "batch-webp",
+  "prompt": "Convert every image in FIXTURES/photos to WebP. Put the results in OUTDIR/webp and leave the originals alone.",
+  "expect": [
+   "_contract.py|probe.py",
+   "batch.py"
+  ]
+ },
+ {
+  "id": "batch-thumbs-ja",
+  "prompt": "FIXTURES/photos の中の画像を全部、長辺 400px のサムネイルにして OUTDIR/thumbs に保存して。",
+  "expect": [
+   "batch.py"
+  ]
+ },
+ {
+  "id": "readme-fit",
+  "prompt": "Shrink FIXTURES/screenshot.png so it fits inside 800x600 for our README without distorting it. Save to OUTDIR.",
+  "expect": [
+   "probe.py",
+   "resize.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "square-fill",
+  "prompt": "Make a 1080x1080 square version of FIXTURES/hero.jpg for Instagram - fill the square, cropping whatever doesn't fit. Save in OUTDIR.",
+  "expect": [
+   "probe.py",
+   "resize.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "exact-stretch",
+  "prompt": "Resize FIXTURES/logo.png to exactly 512x512 even if that stretches it. Save in OUTDIR.",
+  "expect": [
+   "probe.py",
+   "resize.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "jpeg-quality",
+  "prompt": "Convert FIXTURES/screenshot.png to a JPEG at quality 85 in OUTDIR.",
+  "expect": [
+   "probe.py",
+   "convert.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "png-to-webp-ja",
+  "prompt": "FIXTURES/logo.png を WebP に変換して OUTDIR に置いて。",
+  "expect": [
+   "convert.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "verify-result",
+  "prompt": "I already made OUTDIR/og.jpg from FIXTURES/hero.jpg and it is supposed to be exactly 1200x630 JPEG. Verify it and tell me if it's right.",
+  "expect": [
+   "check.py"
+  ]
+ },
+ {
+  "id": "capability-question",
+  "prompt": "Can this machine write WebP and read HEIC? Answer from what is actually installed.",
+  "expect": [
+   "_contract.py"
+  ]
+ },
+ {
+  "id": "no-size-given",
+  "prompt": "Make FIXTURES/hero.jpg smaller.",
+  "expect": [],
+  "ask": true,
+  "note": "SKILL.md rule 4: no size was given, so the agent asks for one instead of choosing."
+ },
+ {
+  "id": "overwrite-request",
+  "prompt": "Resize FIXTURES/hero.jpg to fit in 1024x1024 and just overwrite the original file.",
+  "expect": [
+   "probe.py",
+   "resize.py",
+   "check.py"
+  ],
+  "note": "The agent writes a new file and explains that the skill never overwrites an original."
+ },
+ {
+  "id": "decline-video-frames",
+  "prompt": "Extract one frame per second from FIXTURES/clip.mp4 as PNGs into OUTDIR.",
+  "expect": [],
+  "decline": true,
+  "note": "Out of scope (video): decline and point to a video skill; no raw ffmpeg or magick."
+ },
+ {
+  "id": "decline-gif-animation",
+  "prompt": "Turn the images in FIXTURES/photos into an animated GIF slideshow.",
+  "expect": [],
+  "decline": true,
+  "note": "Out of scope (GIF animation): decline; no raw magick."
+ },
+ {
+  "id": "decline-background-removal",
+  "prompt": "Remove the background from FIXTURES/hero.jpg so only the person is left.",
+  "expect": [],
+  "decline": true,
+  "note": "Out of scope (AI background removal): decline."
+ },
+ {
+  "id": "decline-face-blur-ja",
+  "prompt": "FIXTURES/hero.jpg に写っている人の顔を自動で見つけてぼかして。",
+  "expect": [],
+  "decline": true,
+  "note": "Out of scope (face recognition): decline, in Japanese."
+ },
+ {
+  "id": "decline-raw",
+  "prompt": "Develop FIXTURES/DSC0001.ARW (a Sony RAW file) into a JPEG with nice colours.",
+  "expect": [],
+  "decline": true,
+  "note": "Out of scope (RAW development): decline."
+ }
+]

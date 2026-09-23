@@ -19,15 +19,23 @@ jobs:
       - run: python3 -m unittest discover -s tests -v
       - run: python3 scripts/_contract.py doctor --json
       - run: python3 scripts/_contract.py contract --json
+      - name: docs/contract.md matches the contract
+        run: python3 .github/scripts/contract_md.py --check
 
   ubuntu-with-imagemagick:
-    # apt's imagemagick still gives real convert/identify binaries; symlink
-    # `magick` to `convert` so the magick-backed code paths (resize/strip/
-    # trim/convert/probe) actually run in CI instead of only being checked
-    # locally by whoever happens to have ImageMagick installed.
+    # apt's ImageMagick 6 gives real convert/identify/compare/montage binaries;
+    # a small `magick` shim routes IM7-style calls to them so the magick-backed
+    # code paths run in CI. Python 3.9 is the oldest version the skill supports.
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.13"]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Install ImageMagick
         run: |
           sudo apt-get update
@@ -35,7 +43,7 @@ jobs:
       - name: Provide a magick compat shim if apt's package lacks one
         run: |
           if ! command -v magick >/dev/null 2>&1; then
-            printf '#!/bin/sh\nif [ "$1" = "identify" ]; then shift; exec identify "$@"; fi\nexec convert "$@"\n' | sudo tee /usr/local/bin/magick >/dev/null
+            printf '#!/bin/sh\ncase "$1" in identify|compare|montage|composite|convert) c="$1"; shift; exec "$c" "$@";; esac\nexec convert "$@"\n' | sudo tee /usr/local/bin/magick >/dev/null
             sudo chmod +x /usr/local/bin/magick
           fi
           magick -version
@@ -49,6 +57,19 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s tests -v
+      - run: python3 scripts/_contract.py doctor --json
+
+  macos-imagemagick7:
+    # The only job with a real ImageMagick 7 `magick` (Homebrew), rather than the
+    # IM6 shim above: IM7-specific output formats and behaviour are checked here.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ImageMagick 7
+        run: |
+          brew install imagemagick || brew upgrade imagemagick || true
+          magick -version
       - run: python3 -m unittest discover -s tests -v
       - run: python3 scripts/_contract.py doctor --json
 

@@ -25,12 +25,12 @@ SIPS_FORMAT_ALIASES = {"jpg": "jpeg", "tif": "tiff"}
 
 def build_parser():
     parser = JSONArgumentParser(description="Convert an image to another format")
-    parser.add_argument("input")
-    parser.add_argument("-o", "--output", required=True)
-    parser.add_argument("--quality", type=int, default=None, help="0-100, JPEG/WebP quality")
+    parser.add_argument("input", help="image file to read (never modified)")
+    parser.add_argument("-o", "--output", required=True, help="file to write; must differ from the input, extension picks the format")
+    parser.add_argument("--quality", type=int, default=None, help="0-100 encoder quality for lossy formats (JPEG/WebP)")
     parser.add_argument("--overwrite", action="store_true", help="allow replacing an existing output file")
-    parser.add_argument("--json", action="store_true")
-    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--json", action="store_true", help="print one JSON object (ok:true/false) instead of text")
+    parser.add_argument("--dry-run", action="store_true", help="print the backend command that would run, write nothing")
     return parser
 
 

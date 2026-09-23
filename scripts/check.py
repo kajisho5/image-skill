@@ -21,12 +21,12 @@ def build_parser():
     parser = JSONArgumentParser(description="Verify an image output file")
     parser.add_argument("output", help="the file to check")
     parser.add_argument("--input", help="original input path; fails if output resolves to this same path")
-    parser.add_argument("--expect-width", type=int)
-    parser.add_argument("--expect-height", type=int)
+    parser.add_argument("--expect-width", type=int, help="fail unless the width is exactly this")
+    parser.add_argument("--expect-height", type=int, help="fail unless the height is exactly this")
     parser.add_argument("--expect-max-width", type=int, help="fail if width exceeds this (for fit-mode results)")
     parser.add_argument("--expect-max-height", type=int, help="fail if height exceeds this (for fit-mode results)")
     parser.add_argument("--expect-format", help="expected format, e.g. WEBP, JPEG, PNG")
-    parser.add_argument("--json", action="store_true")
+    parser.add_argument("--json", action="store_true", help="print one JSON object (ok:true/false) instead of text")
     return parser
 
 

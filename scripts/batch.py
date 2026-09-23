@@ -28,12 +28,12 @@ def build_parser():
         epilog="Extra args after -- are forwarded to the tool, e.g.: "
         "batch.py resize -i ./photos -o ./out --json -- --width 1200 --height 1200 --mode fit",
     )
-    parser.add_argument("tool", choices=sorted(TOOL_MODULES))
-    parser.add_argument("-i", "--input-dir", required=True)
-    parser.add_argument("-o", "--output-dir", required=True)
+    parser.add_argument("tool", choices=sorted(TOOL_MODULES), help="tool to run on each file")
+    parser.add_argument("-i", "--input-dir", required=True, help="folder of images to read (not recursive)")
+    parser.add_argument("-o", "--output-dir", required=True, help="folder to write results into; must differ from --input-dir")
     parser.add_argument("--ext", default=None, help="output extension for convert, e.g. webp (required for convert)")
-    parser.add_argument("--json", action="store_true")
-    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--json", action="store_true", help="print one JSON object (ok:true/false) instead of text")
+    parser.add_argument("--dry-run", action="store_true", help="print the backend command that would run, write nothing")
     return parser
 
 

@@ -26,8 +26,8 @@ from _common import (  # noqa: E402
 
 def build_parser():
     parser = JSONArgumentParser(description="Trim a solid-color border from an image")
-    parser.add_argument("input")
-    parser.add_argument("-o", "--output", required=True)
+    parser.add_argument("input", help="image file to read (never modified)")
+    parser.add_argument("-o", "--output", required=True, help="file to write; must differ from the input, extension picks the format")
     parser.add_argument("--fuzz", type=float, default=2.0, help="color similarity tolerance, percent (default 2.0)")
     parser.add_argument(
         "--max-trim-percent",
@@ -35,9 +35,9 @@ def build_parser():
         default=90.0,
         help="fail if more than this percent of the area is removed (default 90.0)",
     )
-    parser.add_argument("--overwrite", action="store_true")
-    parser.add_argument("--json", action="store_true")
-    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--overwrite", action="store_true", help="allow replacing an existing output file")
+    parser.add_argument("--json", action="store_true", help="print one JSON object (ok:true/false) instead of text")
+    parser.add_argument("--dry-run", action="store_true", help="print the backend command that would run, write nothing")
     return parser
 
 

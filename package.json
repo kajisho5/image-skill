@@ -6,12 +6,19 @@
     "imagemagick-skill": "bin/install.js"
   },
   "files": [
-    "bin",
-    "scripts",
+    "bin/install.js",
+    "scripts/*.py",
+    "docs/contract.md",
     "SKILL.md",
     "README.md",
     "LICENSE"
   ],
+  "scripts": {
+    "test": "python3 -m unittest discover -s tests -v",
+    "contract": "python3 scripts/_contract.py contract --json",
+    "doctor": "python3 scripts/_contract.py doctor",
+    "docs:contract": "python3 .github/scripts/contract_md.py --write"
+  },
   "engines": {
     "node": ">=16"
   },
@@ -19,10 +26,10 @@
   "author": "kajisho5",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kajisho5/image-skill.git"
+    "url": "git+https://github.com/kajisho5/Image-skill.git"
   },
-  "homepage": "https://github.com/kajisho5/image-skill#readme",
-  "bugs": "https://github.com/kajisho5/image-skill/issues",
+  "homepage": "https://github.com/kajisho5/Image-skill#readme",
+  "bugs": "https://github.com/kajisho5/Image-skill/issues",
   "keywords": [
     "imagemagick",
     "image",
