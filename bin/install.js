@@ -10,43 +10,147 @@ const PKG_ROOT = path.join(__dirname, "..");
 const SCRIPTS_SRC = path.join(PKG_ROOT, "scripts");
 const SKILL_MD_SRC = path.join(PKG_ROOT, "SKILL.md");
 const PACKAGE_JSON_SRC = path.join(PKG_ROOT, "package.json");
-const SKILL_NAME = "image-skill";
+const SKILL_NAME = "imagemagick-skill";
 
-const USAGE = `usage: npx image-skill [target] [--uninstall]
-       npx image-skill doctor [--json]
-       npx image-skill contract --json
-       npx image-skill --help
+// This skill shipped as "image-skill" up to 0.2.x. That name on npm belongs to an
+// unrelated package, so an "image-skill" directory next to a target may be ours or
+// someone else's; it is only removed when every check in legacyNotOursReason() passes.
+const LEGACY_NAME = "image-skill";
+const LEGACY_CONTRACT_MARKER = "image-skill contract/doctor";
+const LEGACY_REPO = "kajisho5/image-skill";
+const LEGACY_TOP_LEVEL = new Set(["SKILL.md", "package.json", "scripts"]);
+
+const USAGE = `usage: npx imagemagick-skill [target] [--uninstall]
+       npx imagemagick-skill doctor [--json]
+       npx imagemagick-skill contract --json
+       npx imagemagick-skill --help
 
 Install targets (default: global Claude Code):
-  (no flag)          ~/.claude/skills/image-skill
-  --cursor           ~/.cursor/skills/image-skill
-  --codex            ~/.codex/skills/image-skill
+  (no flag)          ~/.claude/skills/imagemagick-skill
+  --cursor           ~/.cursor/skills/imagemagick-skill
+  --codex            ~/.agents/skills/imagemagick-skill
   --all              all of the above
-  --dir <parent>     <parent>/image-skill
-  --project          ./.claude/skills/image-skill (current project only)
+  --dir <parent>     <parent>/imagemagick-skill
+  --project          ./.claude/skills/imagemagick-skill (current project only)
 
   --uninstall        remove the installed target(s) instead of installing
+
+Formerly published as "image-skill": an old image-skill copy next to a target is
+removed on install/uninstall only when it is recognisably this project's; anything
+else is left in place with a warning.
 `;
 
-function targetDirs(flags, cwd) {
+function targets(flags, cwd) {
   const home = os.homedir();
   if (flags.dir) {
-    return [path.join(flags.dir, SKILL_NAME)];
+    const parent = path.resolve(flags.dir);
+    return [{ dir: path.join(parent, SKILL_NAME), legacy: [path.join(parent, LEGACY_NAME)] }];
   }
   if (flags.project) {
-    return [path.join(cwd, ".claude", "skills", SKILL_NAME)];
+    const parent = path.join(cwd, ".claude", "skills");
+    return [{ dir: path.join(parent, SKILL_NAME), legacy: [path.join(parent, LEGACY_NAME)] }];
   }
-  const globalTargets = {
-    claude: path.join(home, ".claude", "skills", SKILL_NAME),
-    cursor: path.join(home, ".cursor", "skills", SKILL_NAME),
-    codex: path.join(home, ".codex", "skills", SKILL_NAME),
+  const claude = {
+    dir: path.join(home, ".claude", "skills", SKILL_NAME),
+    legacy: [path.join(home, ".claude", "skills", LEGACY_NAME)],
   };
-  if (flags.all) {
-    return [globalTargets.claude, globalTargets.cursor, globalTargets.codex];
+  const cursor = {
+    dir: path.join(home, ".cursor", "skills", SKILL_NAME),
+    legacy: [path.join(home, ".cursor", "skills", LEGACY_NAME)],
+  };
+  // Codex reads user skills from ~/.agents/skills; ~/.codex/skills (where 0.2.x
+  // installed) is not a location Codex scans.
+  const codex = {
+    dir: path.join(home, ".agents", "skills", SKILL_NAME),
+    legacy: [
+      path.join(home, ".agents", "skills", LEGACY_NAME),
+      path.join(home, ".codex", "skills", LEGACY_NAME),
+    ],
+  };
+  if (flags.all) return [claude, cursor, codex];
+  if (flags.cursor) return [cursor];
+  if (flags.codex) return [codex];
+  return [claude];
+}
+
+function frontmatterName(skillMdPath) {
+  const text = fs.readFileSync(skillMdPath, "utf8");
+  if (!text.startsWith("---")) return null;
+  const end = text.indexOf("\n---", 3);
+  if (end === -1) return null;
+  const m = text.slice(3, end).match(/^name:\s*["']?([^"'\r\n]+?)["']?\s*$/m);
+  return m ? m[1] : null;
+}
+
+// Returns null when `dir` is provably an install of this project under its old
+// name, otherwise the reason it is not (and so must be left alone).
+function legacyNotOursReason(dir) {
+  const top = fs.lstatSync(dir);
+  if (top.isSymbolicLink()) return "it is a symlink";
+  if (!top.isDirectory()) return "it is not a directory";
+
+  const extra = fs.readdirSync(dir).filter((e) => !LEGACY_TOP_LEVEL.has(e));
+  if (extra.length) return `it contains files this installer never wrote (${extra.join(", ")})`;
+
+  const skillMd = path.join(dir, "SKILL.md");
+  if (!fs.existsSync(skillMd)) return "it has no SKILL.md";
+  if (frontmatterName(skillMd) !== LEGACY_NAME) return `its SKILL.md name is not "${LEGACY_NAME}"`;
+
+  const scriptsDir = path.join(dir, "scripts");
+  if (!fs.existsSync(scriptsDir) || !fs.lstatSync(scriptsDir).isDirectory()) return "it has no scripts/ directory";
+  for (const entry of fs.readdirSync(scriptsDir, { withFileTypes: true })) {
+    const ok = (entry.isFile() && entry.name.endsWith(".py")) || (entry.isDirectory() && entry.name === "__pycache__");
+    if (!ok) return `scripts/ contains ${entry.name}, which this project never shipped`;
   }
-  if (flags.cursor) return [globalTargets.cursor];
-  if (flags.codex) return [globalTargets.codex];
-  return [globalTargets.claude];
+  const contractPy = path.join(scriptsDir, "_contract.py");
+  if (!fs.existsSync(contractPy) || !fs.readFileSync(contractPy, "utf8").includes(LEGACY_CONTRACT_MARKER)) {
+    return "scripts/_contract.py is not this project's";
+  }
+
+  const pkgPath = path.join(dir, "package.json");
+  if (fs.existsSync(pkgPath)) {
+    let pkg;
+    try {
+      pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+    } catch {
+      return "its package.json is not valid JSON";
+    }
+    const repo = typeof pkg.repository === "string" ? pkg.repository : (pkg.repository && pkg.repository.url) || "";
+    if (pkg.name !== LEGACY_NAME || !repo.includes(LEGACY_REPO)) {
+      return `its package.json is not ${LEGACY_NAME} from ${LEGACY_REPO}`;
+    }
+  }
+  return null;
+}
+
+function cleanLegacy(legacyDirs) {
+  let removed = 0;
+  for (const dir of legacyDirs) {
+    if (!fs.existsSync(dir) && !isDanglingSymlink(dir)) continue;
+    let reason;
+    try {
+      reason = legacyNotOursReason(dir);
+    } catch (err) {
+      reason = `it could not be inspected (${err.message})`;
+    }
+    if (reason === null) {
+      fs.rmSync(dir, { recursive: true, force: true });
+      console.log(`removed old ${LEGACY_NAME} install: ${dir}`);
+      removed += 1;
+    } else {
+      console.warn(`warning: left ${dir} in place: ${reason}.`);
+      console.warn(`  If it is an old copy of this skill, delete it by hand; if another package owns it, keep it.`);
+    }
+  }
+  return removed;
+}
+
+function isDanglingSymlink(p) {
+  try {
+    return fs.lstatSync(p).isSymbolicLink();
+  } catch {
+    return false;
+  }
 }
 
 function copyDir(src, dest) {
@@ -72,12 +176,6 @@ function installTo(dir) {
   copyDir(SCRIPTS_SRC, path.join(dir, "scripts"));
 }
 
-function uninstallFrom(dir) {
-  const existed = fs.existsSync(dir);
-  fs.rmSync(dir, { recursive: true, force: true });
-  return existed;
-}
-
 function warnIfNoBackend() {
   const doctorScript = path.join(SCRIPTS_SRC, "_contract.py");
   const result = spawnSync("python3", [doctorScript, "doctor", "--json"], { encoding: "utf8" });
@@ -97,7 +195,7 @@ function warnIfNoBackend() {
   console.warn("  macOS:          brew install imagemagick");
   console.warn("  Debian/Ubuntu:  sudo apt install imagemagick");
   console.warn("  Windows:        https://imagemagick.org/script/download.php#windows");
-  console.warn("  Then check:     npx image-skill doctor");
+  console.warn("  Then check:     npx imagemagick-skill doctor");
   console.warn("");
 }
 
@@ -170,27 +268,30 @@ function main() {
     return;
   }
 
-  const dirs = targetDirs(flags, process.cwd());
+  const list = targets(flags, process.cwd());
 
   if (flags.uninstall) {
     let removedAny = false;
-    for (const dir of dirs) {
-      if (uninstallFrom(dir)) {
-        console.log(`removed: ${dir}`);
+    for (const t of list) {
+      if (fs.existsSync(t.dir)) {
+        fs.rmSync(t.dir, { recursive: true, force: true });
+        console.log(`removed: ${t.dir}`);
         removedAny = true;
       }
+      if (cleanLegacy(t.legacy) > 0) removedAny = true;
     }
-    if (!removedAny) console.log("nothing to remove");
+    if (!removedAny) console.log(`no ${SKILL_NAME} install found at the selected target(s)`);
     return;
   }
 
-  for (const dir of dirs) {
-    installTo(dir);
-    console.log(`installed: ${dir}`);
+  for (const t of list) {
+    installTo(t.dir);
+    console.log(`installed: ${t.dir}`);
+    cleanLegacy(t.legacy);
   }
   console.log("");
   console.log("Already installed? Re-running replaces the copy with whatever version you run.");
-  console.log("Next: npx image-skill doctor");
+  console.log("Next: npx imagemagick-skill doctor");
 
   warnIfNoBackend();
 }

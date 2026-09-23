@@ -32,6 +32,7 @@ def _read_version():
 
 
 VERSION = _read_version()
+SKILL_ID = "imagemagick-skill"
 
 TOOLS = [
     {
@@ -118,7 +119,7 @@ RULES = [
 
 
 def build_contract_payload():
-    return {"ok": True, "version": VERSION, "tools": TOOLS, "rules": RULES}
+    return {"ok": True, "name": SKILL_ID, "version": VERSION, "tools": TOOLS, "rules": RULES}
 
 
 _FORMAT_MODE_RE = re.compile(r"^\s*([A-Za-z0-9_]+)\*?(?:\s+\S+)?\s+([r-][w-][+-])\s", re.MULTILINE)
@@ -237,7 +238,7 @@ def build_doctor_payload():
                 "note": (
                     "PDF read/write is blocked by ImageMagick's policy.xml on this system"
                     if pdf_disabled
-                    else "not detected as blocked here; PDF conversion is out of scope for image-skill v0.1 regardless"
+                    else "not detected as blocked here; PDF conversion is out of scope for this skill regardless"
                 ),
             }
         except (subprocess.TimeoutExpired, OSError) as e:
@@ -309,7 +310,7 @@ def cmd_doctor(args):
 
 
 def build_parser():
-    parser = JSONArgumentParser(description="image-skill contract/doctor")
+    parser = JSONArgumentParser(description=f"{SKILL_ID} contract/doctor")
     sub = parser.add_subparsers(dest="command", required=True)
 
     contract_p = sub.add_parser("contract", help="describe the available tools as JSON")

@@ -1,9 +1,9 @@
 ---
-name: image-skill
+name: imagemagick-skill
 description: Local image editing (probe, convert, resize, thumbnail, EXIF/GPS strip, trim) for files that land in a repo - iPhone HEIC/JPEG, screenshots, OG images, README assets. Use when asked to convert, resize, thumbnail, make a WebP/OG image, strip GPS/EXIF, trim a border, or check an image's format/dimensions. Not for video, GIF animation, frame extraction, face recognition, generative AI, or RAW/ICC color work.
 ---
 
-# image-skill
+# imagemagick-skill
 
 Local, deterministic image editing for a coding agent. No CLI is invented
 here - every operation goes through the scripts in `scripts/`, each of which

@@ -47,6 +47,9 @@ class TestContract(unittest.TestCase):
         self.assertTrue(payload["ok"])
         self.assertIn("rules", payload)
 
+    def test_contract_reports_the_package_name(self):
+        self.assertEqual(_contract.build_contract_payload()["name"], "imagemagick-skill")
+
 
 if __name__ == "__main__":
     unittest.main()
