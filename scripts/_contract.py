@@ -20,6 +20,7 @@ from _common import (  # noqa: E402
     JSONArgumentParser,
     fail,
     find_fonts,
+    magick_kind,
     wants_json,
     which_magick,
     which_sips,
@@ -666,7 +667,7 @@ def build_doctor_payload():
     is_mac = sys.platform == "darwin"
 
     backends = {
-        "magick": {"found": bool(magick), "path": magick},
+        "magick": {"found": bool(magick), "path": magick, "kind": magick_kind() if magick else None},
         "sips": {"found": bool(sips), "path": sips},
     }
 

@@ -72,6 +72,14 @@ class DocBumpTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             bump_contract_md("nothing here", "0.3.0", "0.4.0")
 
+    def test_roadmap_rows_merged_since_the_last_release_get_the_new_version(self):
+        text = ("The released version today is **0.6.2**.\n"
+                "| RM-047 | done | 0.6.1 | a |\n| RM-048 | done | main | b |\n| RM-049 | planned | | c |\n")
+        out = bump_roadmap_md(text, "0.6.2", "0.7.0")
+        self.assertIn("| RM-048 | done | 0.7.0 | b |", out)
+        self.assertIn("| RM-047 | done | 0.6.1 | a |", out)
+        self.assertIn("| RM-049 | planned | | c |", out)
+
     def test_roadmap_keeps_prose_attached_to_its_version(self):
         text = "The released version today is **0.4.0** — look.py and compare.py.\n"
         once = bump_roadmap_md(text, "0.4.0", "0.4.1")

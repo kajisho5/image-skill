@@ -65,8 +65,60 @@ def wants_json(argv):
     return "--json" in (sys.argv[1:] if argv is None else argv)
 
 
+IM6_SUBCOMMANDS = ("identify", "compare", "montage", "composite", "convert")
+_IM6_CONVERT_CHECKED = {}
+
+
+def _im6_convert():
+    """ImageMagick 6's `convert`, when there is no `magick` (Debian/Ubuntu's apt package).
+
+    Only a `convert` whose -version says ImageMagick 6 counts, and never on Windows,
+    where `convert.exe` is the system's disk-conversion tool."""
+    if os.name == "nt":
+        return None
+    path = shutil.which("convert")
+    if not path:
+        return None
+    if path not in _IM6_CONVERT_CHECKED:
+        try:
+            out = subprocess.run([path, "-version"], capture_output=True, text=True, timeout=10).stdout
+        except (OSError, subprocess.TimeoutExpired):
+            out = ""
+        first = out.strip().splitlines()[0] if out.strip() else ""
+        _IM6_CONVERT_CHECKED[path] = first.startswith("Version: ImageMagick 6.")
+    return path if _IM6_CONVERT_CHECKED[path] else None
+
+
 def which_magick():
-    return shutil.which("magick")
+    """The ImageMagick command every tool runs: `magick` (ImageMagick 7), else
+    ImageMagick 6's `convert`. Pass commands through run() (or magick_argv) so an
+    IM7-style `magick identify ...` reaches IM6's own `identify`."""
+    return shutil.which("magick") or _im6_convert()
+
+
+def magick_kind():
+    """"magick", "imagemagick6" (convert/identify, no magick command) or None."""
+    if shutil.which("magick"):
+        return "magick"
+    return "imagemagick6" if _im6_convert() else None
+
+
+def magick_argv(cmd):
+    """IM7-style argv -> the argv that runs on this machine. With `magick`, unchanged.
+    With ImageMagick 6, `convert identify ...` becomes `identify ...` (likewise compare,
+    montage, composite) and `convert convert ...` becomes `convert ...`; everything else
+    is already convert's own syntax. A list of argvs is mapped item by item."""
+    if not cmd:
+        return cmd
+    if isinstance(cmd[0], list):
+        return [magick_argv(c) for c in cmd]
+    if len(cmd) < 2 or cmd[1] not in IM6_SUBCOMMANDS or os.path.basename(cmd[0]) != "convert":
+        return cmd
+    if shutil.which("magick") or cmd[0] != _im6_convert():
+        return cmd
+    if cmd[1] == "convert":
+        return [cmd[0]] + list(cmd[2:])
+    return [shutil.which(cmd[1]) or cmd[1]] + list(cmd[2:])
 
 
 def which_sips():
@@ -89,6 +141,7 @@ def check_output_not_exists(output_path, allow_overwrite=False):
 
 def run(cmd, dry_run=False, timeout=120):
     """Run a subprocess command given as an argv list. Never uses shell=True."""
+    cmd = magick_argv(cmd)
     if dry_run:
         return {"dry_run": True, "command": cmd}
     try:

@@ -7,12 +7,8 @@ on:
 
 jobs:
   ubuntu-no-magick-binary:
-    # Ubuntu's apt "imagemagick" package is IM6 without a `magick` compat
-    # command (only convert/identify/mogrify/...), so this job exercises the
-    # "no magick" code paths: doctor's no-backend reporting, and every test
-    # that isn't gated on a backend. It intentionally does NOT install
-    # ImageMagick, to keep that signal honest instead of faking a `magick`
-    # binary.
+    # No ImageMagick at all (neither `magick` nor IM6's `convert`): doctor's
+    # no-backend reporting, and every test that isn't gated on a backend.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,9 +19,9 @@ jobs:
         run: python3 .github/scripts/contract_md.py --check
 
   ubuntu-with-imagemagick:
-    # apt's ImageMagick 6 gives real convert/identify/compare/montage binaries;
-    # a small `magick` shim routes IM7-style calls to them so the magick-backed
-    # code paths run in CI. Python 3.9 is the oldest version the skill supports.
+    # apt's ImageMagick 6 has convert/identify/compare/montage but no `magick`
+    # command. The skill uses it as it is (no shim), exactly as a user's Ubuntu
+    # would. Python 3.9 is the oldest version the skill supports.
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -45,14 +41,15 @@ jobs:
           # heif-enc builds a real HEIC with EXIF for test_gps_detection, since IM6 does
           # not parse a HEIC's EXIF on its own.
           sudo apt-get install -y libheif-examples libheif-plugin-x265 libheif-plugin-libde265
-      - name: Provide a magick compat shim if apt's package lacks one
+      - name: ImageMagick 6 with no magick command
         run: |
-          if ! command -v magick >/dev/null 2>&1; then
-            printf '#!/bin/sh\ncase "$1" in identify|compare|montage|composite|convert) c="$1"; shift; exec "$c" "$@";; esac\nexec convert "$@"\n' | sudo tee /usr/local/bin/magick >/dev/null
-            sudo chmod +x /usr/local/bin/magick
-          fi
-          magick -version
+          ! command -v magick
+          convert -version
       - run: python3 -m unittest discover -s tests -v
+      - name: doctor finds ImageMagick 6 directly
+        run: |
+          python3 scripts/_contract.py doctor --json | tee doctor.json
+          python3 -c "import json; d = json.load(open('doctor.json')); assert d['ok'] and d['backends']['magick']['kind'] == 'imagemagick6', d['backends']"
 
   macos-sips:
     # macOS ships sips out of the box - this is the only job that actually
@@ -66,8 +63,8 @@ jobs:
       - run: python3 scripts/_contract.py doctor --json
 
   macos-imagemagick7:
-    # The only job with a real ImageMagick 7 `magick` (Homebrew), rather than the
-    # IM6 shim above: IM7-specific output formats and behaviour are checked here.
+    # The only job with ImageMagick 7's `magick` (Homebrew): IM7-specific output
+    # formats and behaviour are checked here.
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4

@@ -10,6 +10,9 @@ it describes:
 
 A later automatic bump only moves the leading version. The sentence must be found
 exactly once; anything else is an error rather than a silent partial bump.
+
+Roadmap rows marked `| done | main |` (merged since the last release) are given the
+new version, since that is the release they ship in.
 """
 import re
 import sys
@@ -33,7 +36,12 @@ def bump_roadmap_md(text, old, new):
         described = m.group(1) or f"{NOTE}**{old}**"
         return f"The released version today is **{new}**{described}"
 
-    return pattern.sub(repl, text, count=1)
+    text = pattern.sub(repl, text, count=1)
+    # Items merged since the last release ("| done | main |") shipped in this one.
+    return MAIN_ROW.sub(lambda m: f"{m.group(1)}{new}{m.group(2)}", text)
+
+
+MAIN_ROW = re.compile(r"^(\| RM-\d{3} \| done \| )main( \|)", re.M)
 
 
 def main(argv):

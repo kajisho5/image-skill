@@ -319,7 +319,7 @@ Python 3.9+ standard library only, plus one of the builds below. On every pull r
 
 | Backend | Where | Notes |
 |---|---|---|
-| ImageMagick 6.9 | Ubuntu 24.04 apt, Python 3.9 and 3.13 | IM6 has no `magick` command. CI adds the shim shown under [Install](#install), and HEIC comes from the libheif plugins. |
+| ImageMagick 6.9 | Ubuntu 24.04 apt, Python 3.9 and 3.13 | No `magick` command: the tools use IM6's own `convert`/`identify` (doctor reports `kind: imagemagick6`). HEIC comes from the libheif plugins. |
 | ImageMagick 7.1 | macOS, Homebrew | `magick`, HEIC and WebP |
 | sips | macOS, no ImageMagick | the reduced tool set in the table above |
 | none | Ubuntu, no image binary | Everything that needs no binary: contract, docs drift, installer, MCP protocol, argument errors |
@@ -359,22 +359,15 @@ ImageMagick itself:
 | OS | Command |
 |----|---------|
 | macOS | `brew install imagemagick` (without it, `sips` covers the reduced tool set) |
-| Ubuntu / Debian | `sudo apt install imagemagick libheif-plugin-libde265` (the second package is for HEIC input), then the `magick` shim below |
+| Ubuntu / Debian | `sudo apt install imagemagick libheif-plugin-libde265` (the second package is for HEIC input) |
 | Windows | the installer from [imagemagick.org](https://imagemagick.org/script/download.php#windows), with `magick` on PATH |
 
-Ubuntu and Debian ship ImageMagick 6, which has no `magick` command. The tools look only for `magick`, so `doctor` reports no backend until you add this shim. It is the same one CI uses:
-
-```bash
-printf '#!/bin/sh\ncase "$1" in identify|compare|montage|composite|convert) c="$1"; shift; exec "$c" "$@";; esac\nexec convert "$@"\n' | sudo tee /usr/local/bin/magick >/dev/null
-sudo chmod +x /usr/local/bin/magick
-```
-
-Detecting ImageMagick 6 without a shim is on the [roadmap](docs/roadmap.md).
+Ubuntu and Debian ship ImageMagick 6, which has no `magick` command. The tools then use its `convert` and `identify` directly, with no shim; `doctor --json` reports `backends.magick.kind: "imagemagick6"`. A `convert` that is not ImageMagick 6, and any `convert` on Windows, is never used.
 
 Requirements:
 
 - Python 3.9+
-- `magick`, or on macOS `sips` for the reduced set
+- ImageMagick 7 (`magick`) or 6 (`convert`), or on macOS `sips` for the reduced set
 - Node 16+ only for the `npx` installer
 
 ## Scope
