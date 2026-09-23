@@ -46,7 +46,8 @@ say which sentence here no longer holds.
 - **`optimize` falls back to `webp:target-size` for WebP when `-quality` has no effect.**
   Ubuntu 24.04's ImageMagick 6.9.12 writes the same WebP bytes at every quality; a
   quality search there would "succeed" at a meaningless number. `method` says which path
-  was used. Test: `test_webp_fits_by_quality_or_target_size`.
+  was used. Tests: `test_quality_that_changes_nothing_switches_to_target_size`,
+  `test_webp_fits_by_quality_or_target_size`.
 
 ## Pixels
 
