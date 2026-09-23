@@ -6,6 +6,9 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
+- Docs: `docs/roadmap.md` is now 100 numbered items (RM-001 ... RM-100), each `done`
+  (with the release it shipped in), `planned` or `idea`, one line each; a test holds the
+  numbering, states and release references.
 - Docs: README rewritten in the shape of ffmpeg-skill's, with a 2x2 grid of demo GIFs,
   agent request examples, a tools table with the `sips` fallback for each tool, MCP and
   plugin-marketplace install, an ImageMagick 6 / 7 / sips compatibility table and the
