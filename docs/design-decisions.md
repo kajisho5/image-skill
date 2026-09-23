@@ -105,6 +105,14 @@ say which sentence here no longer holds.
   is for the agent to inspect, never a deliverable. Test:
   `test_grid_has_the_promised_size_and_leaves_inputs_alone`.
 
+- **GPS is detected by parsing the EXIF block, not by asking ImageMagick.** ImageMagick 6
+  attaches a HEIC photo's EXIF as a bare TIFF block and never turns it into `exif:*`
+  properties, so `%[EXIF:GPSLatitude]` said "no GPS" for a HEIC that had coordinates. The
+  tool reads the raw block (`exif:-`) and walks the TIFF/GPS IFD itself; a block it cannot
+  parse is `null` (unknown), never `false`, and `strip` fails unless the result is provably
+  GPS-free. Tests: `test_every_layout_imagemagick_emits`,
+  `test_unparseable_is_unknown_not_false`, `test_heic_with_gps_is_detected_and_stripped`.
+
 ## Arguments and results
 
 - **A malformed invocation still answers with `ok: false` JSON under `--json`**, exit 1,

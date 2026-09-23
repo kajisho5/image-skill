@@ -130,7 +130,7 @@ Output of `--json` on success (`ok: true`):
 | `format` | string | yes | backend format name, e.g. JPEG, PNG, HEIC (sips reports lowercase) |
 | `colorspace` | string or null | no | null on the sips backend |
 | `has_alpha` | boolean or null | no | null on the sips backend |
-| `has_gps` | boolean or null | no | EXIF GPSLatitude present; null on the sips backend |
+| `has_gps` | boolean or null | no | GPS coordinates in the EXIF block (parsed by the tool for every format, HEIC included); null when an EXIF block can't be parsed, and on the sips backend |
 | `backend` | string: `magick` \| `sips` | yes |  |
 | `note` | string | no | present when a field could not be measured |
 

@@ -11,6 +11,7 @@ import os
 import platform
 import re
 import shutil
+import struct
 import subprocess
 import sys
 
@@ -385,3 +386,44 @@ def resolve_font(text, explicit=None):
     if not fonts["default"]:
         raise ImageSkillError("no usable font found; pass --font /path/to/font.ttf (doctor --json lists fonts)")
     return fonts["default"]
+
+
+def exif_blob_has_gps(blob):
+    """True/False for whether an EXIF block holds GPS coordinates, None if it can't be
+    parsed. Accepts the block as ImageMagick emits it for any format: "Exif\0\0" + TIFF
+    (JPEG, WebP), a bare TIFF (HEIC on ImageMagick 6), or HEIF's 4-byte offset prefix.
+    Parsed here rather than trusting %[EXIF:GPSLatitude], which ImageMagick 6 leaves
+    empty for HEIC even when the file carries GPS."""
+    if not blob:
+        return False
+    starts = [i for i in (0, 4, 6, 10) if blob[i:i + 4] in (b"II*\x00", b"MM\x00*")]
+    if not starts:
+        return None
+    tiff = blob[starts[0]:]
+    try:
+        endian = "<" if tiff[:2] == b"II" else ">"
+        (ifd0,) = struct.unpack(endian + "I", tiff[4:8])
+        (count,) = struct.unpack(endian + "H", tiff[ifd0:ifd0 + 2])
+        gps_ifd = None
+        for n in range(count):
+            entry = tiff[ifd0 + 2 + 12 * n: ifd0 + 14 + 12 * n]
+            tag, _type, _count, value = struct.unpack(endian + "HHII", entry)
+            if tag == 0x8825:
+                gps_ifd = value
+                break
+        if gps_ifd is None:
+            return False
+        (gps_count,) = struct.unpack(endian + "H", tiff[gps_ifd:gps_ifd + 2])
+        tags = {struct.unpack(endian + "H", tiff[gps_ifd + 2 + 12 * n: gps_ifd + 4 + 12 * n])[0] for n in range(gps_count)}
+    except struct.error:
+        return None
+    return bool(tags & {2, 4})  # GPSLatitude / GPSLongitude
+
+
+def image_has_gps(magick, path):
+    """True/False/None for GPS in an image's EXIF, via the raw profile (`exif:-`)."""
+    proc = subprocess.run([magick, f"{path}[0]", "exif:-"], capture_output=True, timeout=120)
+    if proc.returncode != 0 or not proc.stdout:
+        # "no APP1 data is available": the image has no EXIF block at all
+        return False
+    return exif_blob_has_gps(proc.stdout)

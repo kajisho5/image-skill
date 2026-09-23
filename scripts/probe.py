@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import (  # noqa: E402
     ImageSkillError,
     JSONArgumentParser,
+    image_has_gps,
     wants_json,
     fail,
     run,
@@ -41,10 +42,9 @@ def _probe_with_magick(magick, path, dry_run):
     line = result["stdout"].strip().splitlines()[0]
     width, height, fmt, colorspace, alpha = line.split("|")
 
-    gps_result = run([magick, "identify", "-format", "%[EXIF:GPSLatitude]", path])
-    has_gps = bool(gps_result["stdout"].strip())
+    has_gps = image_has_gps(magick, path)
 
-    return {
+    payload = {
         "width": int(width),
         "height": int(height),
         "format": fmt,
@@ -53,6 +53,9 @@ def _probe_with_magick(magick, path, dry_run):
         "has_gps": has_gps,
         "backend": "magick",
     }
+    if has_gps is None:
+        payload["note"] = "the file has an EXIF block this tool could not parse; GPS presence is unknown - strip it to be safe"
+    return payload
 
 
 def _probe_with_sips(sips, path, dry_run):
