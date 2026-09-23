@@ -86,6 +86,52 @@ actually usable on this machine - don't take this README's word for it.
 agent follows, [docs/contract.md](./docs/contract.md) for every argument and output key,
 and `python3 scripts/_contract.py contract --json` for the same spec as JSON.
 
+## MCP
+
+Every tool is also an MCP tool: `mcp/server.py` is a stdio JSON-RPC server (standard
+library only) that the installer copies next to the skill. Its tool list, descriptions
+and input schemas are generated from the contract at start-up, so they always match the
+scripts. Use absolute file paths in tool arguments.
+
+**Claude Code**
+
+```bash
+claude mcp add --scope user imagemagick-skill -- python3 ~/.claude/skills/imagemagick-skill/mcp/server.py
+```
+
+**Claude Desktop** - `~/Library/Application Support/Claude/claude_desktop_config.json`
+(macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "imagemagick-skill": {
+      "command": "python3",
+      "args": ["/Users/you/.claude/skills/imagemagick-skill/mcp/server.py"]
+    }
+  }
+}
+```
+
+On Windows, use `python` instead of `python3` unless Python came from the Microsoft Store.
+
+**Cursor** - `~/.cursor/mcp.json` (all projects) or `.cursor/mcp.json` (one project), with
+the same `mcpServers` block as above (point `args` at wherever you installed the skill,
+e.g. `~/.cursor/skills/imagemagick-skill/mcp/server.py` after `npx imagemagick-skill --cursor`).
+
+Try it from a shell:
+
+```bash
+python3 ~/.claude/skills/imagemagick-skill/mcp/server.py --list
+python3 ~/.claude/skills/imagemagick-skill/mcp/server.py --call probe '{"input": "/abs/path/photo.jpg"}'
+```
+
+The server speaks both MCP protocol eras: the `initialize` handshake (2024-11-05 through
+2025-11-25) and the per-request versioning of 2026-07-28 (`server/discover`). A tool
+call runs the script with `--json` and returns its JSON as `structuredContent` (and as
+text); `ok: false` comes back as `isError: true`. `IMAGEMAGICK_SKILL_MCP_TIMEOUT`
+(seconds, default 600, `0` = none) bounds each call.
+
 ## Not a video skill
 
 This repo does not touch video, GIF animation, or frame extraction. Use a

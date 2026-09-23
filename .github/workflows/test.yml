@@ -107,5 +107,6 @@ jobs:
           npx --yes --package "$TARBALL" imagemagick-skill
           test -f "$HOME/.claude/skills/imagemagick-skill/scripts/_contract.py"
           npx --yes --package "$TARBALL" imagemagick-skill doctor --json
+          python3 "$HOME/.claude/skills/imagemagick-skill/mcp/server.py" --list
           npx --yes --package "$TARBALL" imagemagick-skill --uninstall
           test ! -d "$HOME/.claude/skills/imagemagick-skill"

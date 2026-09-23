@@ -132,6 +132,23 @@ say which sentence here no longer holds.
   HEIC is reported separately so nobody assumes it. Test:
   `test_doctor_reports_heic_write_false_when_read_only`.
 
+## MCP
+
+- **The MCP server has no tool table.** Everything it lists is generated from the
+  contract at start-up, and arguments are mapped back to argv by the contract, so adding
+  a flag to a script changes the MCP tool with no second edit. Test:
+  `test_contract_docs_and_mcp_agree`.
+
+- **It serves both protocol eras.** Clients in use today open with `initialize`; the
+  2026-07-28 revision drops that handshake for per-request versions and
+  `server/discover`. A legacy-only server would fail modern clients and a modern-only one
+  would fail today's. Tests: `test_initialize_then_list`,
+  `test_discover_and_per_request_version`, `test_unsupported_version_error`.
+
+- **An unknown argument is a tool error, not a protocol error.** The model sees what was
+  wrong and can retry; an unknown tool is a JSON-RPC error. Test:
+  `test_unknown_argument_is_a_tool_error_the_model_can_fix`.
+
 ## Installing
 
 - **`--codex` installs to `~/.agents/skills`, not `~/.codex/skills`.** That is where

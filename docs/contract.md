@@ -68,6 +68,20 @@ compatible command) and/or `sips` (macOS). `requires_magick: true` means there i
 `sips` path. `npx imagemagick-skill doctor --json` reports, per tool, whether this machine
 can run it (`tools.<name>.usable`) and which backend it would use.
 
+## MCP
+
+`mcp/server.py` carries no tool table of its own. `tools/list` is
+`[mcp_tool(t) for t in contract.tools]` (`scripts/_contract.py`): same names, same order,
+the tool description, and an `inputSchema` translated from `input_schema` - each argparse
+dest is a property (`json` excepted: the server always adds `--json`), positional ones
+are named and marked "(positional N)", `batch`'s `tool_args` go after `--`, and mutually
+exclusive groups are stated in the description. `tools/call` maps the arguments back to
+argv with `mcp_argv()` and returns the script's JSON as `structuredContent` plus a text
+copy; `ok: false` is `isError: true`, an unknown argument is a tool error (so the model
+can correct it) and an unknown tool is a JSON-RPC error. No `outputSchema` is published:
+MCP requires structured results to conform to it, and failures are a different shape.
+`tests/test_mcp.py` checks that `contract --json`, this page and `tools/list` agree.
+
 ## Stability
 
 Within 0.x, tool names, argument names and the keys listed in each `output_schema` are

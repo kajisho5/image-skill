@@ -9,6 +9,7 @@
     "bin/install.js",
     "scripts/*.py",
     "scripts/presets.json",
+    "mcp/server.py",
     "docs/contract.md",
     "SKILL.md",
     "README.md",
