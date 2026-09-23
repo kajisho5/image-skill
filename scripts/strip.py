@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import (  # noqa: E402
     ImageSkillError,
     JSONArgumentParser,
+    image_has_gps,
     wants_json,
     check_output_not_exists,
     check_output_not_input,
@@ -54,9 +55,9 @@ def run_strip(args):
         raise ImageSkillError("strip reported success but output file is missing")
     verify_output_format(args.output, "magick")
 
-    gps_result = run([magick, "identify", "-format", "%[EXIF:GPSLatitude]", args.output])
-    if gps_result["stdout"].strip():
-        raise ImageSkillError("output still contains GPS data after strip")
+    if image_has_gps(magick, args.output) is not False:
+        os.remove(args.output)
+        raise ImageSkillError("output still contains GPS data (or an unreadable EXIF block) after strip")
 
     return {"input": args.input, "output": args.output, "has_gps": False, "backend": "magick"}
 

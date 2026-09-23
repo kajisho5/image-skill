@@ -74,7 +74,7 @@ TOOL_META = {
             "format": {"type": "string", "description": "backend format name, e.g. JPEG, PNG, HEIC (sips reports lowercase)"},
             "colorspace": {"type": ["string", "null"], "description": "null on the sips backend"},
             "has_alpha": {"type": ["boolean", "null"], "description": "null on the sips backend"},
-            "has_gps": {"type": ["boolean", "null"], "description": "EXIF GPSLatitude present; null on the sips backend"},
+            "has_gps": {"type": ["boolean", "null"], "description": "GPS coordinates in the EXIF block (parsed by the tool for every format, HEIC included); null when an EXIF block can't be parsed, and on the sips backend"},
             "backend": {"type": "string", "enum": ["magick", "sips"]},
             "note": {"type": "string", "description": "present when a field could not be measured"},
         },
