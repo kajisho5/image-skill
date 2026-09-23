@@ -6,6 +6,10 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
+- Fix: package metadata points at the renamed repository, `kajisho5/imagemagick-skill`
+  (npm provenance rejects a `repository.url` that does not match the repository that
+  builds the package). A CI test now pins `package.json` and `.claude-plugin/plugin.json`
+  to `$GITHUB_REPOSITORY`, so the next rename fails CI instead of `npm publish`.
 - Docs: `docs/roadmap.md` is now 100 numbered items (RM-001 ... RM-100), each `done`
   (with the release it shipped in), `planned` or `idea`, one line each; a test holds the
   numbering, states and release references.
