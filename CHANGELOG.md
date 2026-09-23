@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.0 (2026-09-23)
+
+## What's Changed
+
+## ✨ Features
+
+- feat: rename npm package to imagemagick-skill and migrate old image-skill installs (#12)
+
+## 🧰 Maintenance
+
+- feat: rename npm package to imagemagick-skill and migrate old image-skill installs (#12)
+
 ## v0.2.2 (2026-09-11)
 
 ## What's Changed
