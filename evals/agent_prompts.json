@@ -177,5 +177,81 @@
   "expect": [],
   "decline": true,
   "note": "Out of scope (RAW development): decline."
+ },
+ {
+  "id": "look-before-say-done",
+  "prompt": "Crop FIXTURES/hero.jpg to a 1:1 square centred on the middle, save it to OUTDIR, and show me what it looks like before you say it's done.",
+  "expect": [
+   "probe.py",
+   "crop.py",
+   "check.py",
+   "look.py"
+  ]
+ },
+ {
+  "id": "crop-rect",
+  "prompt": "Cut the region x=100, y=50, 400 wide and 300 tall out of FIXTURES/hero.jpg into OUTDIR.",
+  "expect": [
+   "probe.py",
+   "crop.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "pad-square-transparent",
+  "prompt": "Make FIXTURES/logo.png square by adding transparent margins (don't scale it). Save to OUTDIR.",
+  "expect": [
+   "probe.py",
+   "pad.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "pad-no-colour",
+  "prompt": "Pad FIXTURES/logo.png to 16:9.",
+  "expect": [],
+  "ask": true,
+  "note": "No fill colour was given; the agent asks instead of choosing one (pad.py requires --color)."
+ },
+ {
+  "id": "rotate-90-ja",
+  "prompt": "FIXTURES/screenshot.png を時計回りに90度回転して OUTDIR に保存して。",
+  "expect": [
+   "rotate.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "optimize-200kb",
+  "prompt": "Make a JPEG version of FIXTURES/hero.jpg that is under 200 KB without changing its dimensions. Save to OUTDIR.",
+  "expect": [
+   "probe.py",
+   "optimize.py",
+   "check.py"
+  ]
+ },
+ {
+  "id": "optimize-impossible-ja",
+  "prompt": "FIXTURES/hero.jpg を寸法を変えずに 2KB 以下の JPEG にして OUTDIR に保存して。",
+  "expect": [
+   "probe.py",
+   "optimize.py"
+  ],
+  "note": "The budget is unreachable; the agent reports optimize's ok:false and smallest size honestly and suggests resizing, without shrinking the image on its own."
+ },
+ {
+  "id": "compare-before-after",
+  "prompt": "I edited FIXTURES/hero.jpg into OUTDIR/edited.jpg (same size). How different are they? Give me the numbers and a difference image in OUTDIR.",
+  "expect": [
+   "compare.py",
+   "look.py"
+  ]
+ },
+ {
+  "id": "preview-folder",
+  "prompt": "Show me all the photos in FIXTURES/photos on one sheet so I can pick one.",
+  "expect": [
+   "look.py|batch.py"
+  ]
  }
 ]

@@ -286,6 +286,220 @@ Output of `--json` on success (`ok: true`):
 | `height` | integer | yes |  |
 | `format` | string or null | yes | read only when --expect-format is given |
 
+### `look`
+
+Make a labelled preview sheet (or a before/after pair) of images so the agent can look at them.
+
+- Script: `scripts/look.py` · role: verification · backends: magick
+- Writes a file: yes · `--dry-run`: yes · `--json`: yes · verify with: -
+
+| Argument | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `inputs` (positional) | array of string | yes |  | images to preview (only read; first frame of multi-frame files) |
+| `-o`, `--output` | string | yes |  | sheet to write (e.g. look.png); must not be one of the inputs |
+| `--overwrite` | boolean | no |  | allow replacing an existing output file |
+| `--json` | boolean | no |  | print one JSON object (ok:true/false) instead of text |
+| `--dry-run` | boolean | no |  | print the backend command that would run, write nothing |
+| `--tile` | string | no | `320` | longest side of each preview tile in pixels (default 320) |
+| `--cols` | string | no |  | tiles per row (default: up to 4) |
+| `--pair` | boolean | no |  | exactly two inputs shown side by side as before / after |
+| `--no-labels` | boolean | no |  | omit the file name / size / format caption under each tile |
+
+Output of `--json` on success (`ok: true`):
+
+| Key | Type | Always present | Description |
+| --- | --- | --- | --- |
+| `ok` | boolean | yes | `true` |
+| `output` | string | yes |  |
+| `mode` | string: `grid` \| `pair` | yes |  |
+| `inputs` | array | yes | per input: {path, width, height, format, has_alpha} |
+| `tile` | integer | yes |  |
+| `cols` | integer | yes |  |
+| `rows` | integer | yes |  |
+| `labels` | boolean | yes |  |
+| `actual` | object | yes | {width, height} in pixels |
+| `backend` | string: `magick` | yes |  |
+| `note` | string | no | present when labels were dropped (no font) |
+
+### `compare`
+
+Measure the difference between two same-size images (SSIM, PSNR, changed pixels), optionally write a heatmap, optionally fail below an SSIM threshold.
+
+- Script: `scripts/compare.py` · role: verification · backends: magick
+- Writes a file: yes · `--dry-run`: yes · `--json`: yes · verify with: `look`
+
+| Argument | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `a` (positional) | string | yes |  | first image, e.g. the original or the expected result (only read) |
+| `b` (positional) | string | yes |  | second image, e.g. the edited or the actual result (only read) |
+| `-o`, `--output` | string | no |  | optional: write a difference heatmap here (dimmed first image, changes from blue to yellow) |
+| `--overwrite` | boolean | no |  | allow replacing an existing output file |
+| `--json` | boolean | no |  | print one JSON object (ok:true/false) instead of text |
+| `--dry-run` | boolean | no |  | print the backend command that would run, write nothing |
+| `--fuzz` | number | no |  | percent of full scale a channel may differ by and still count as unchanged in diff_ratio (default 0: exact) |
+| `--fail-below` | number | no |  | report ok:false (exit 1) when SSIM is below this value (0-1), metrics still included |
+
+Output of `--json` on success (`ok: true`):
+
+| Key | Type | Always present | Description |
+| --- | --- | --- | --- |
+| `ok` | boolean | yes | `true` |
+| `a` | string | yes |  |
+| `b` | string | yes |  |
+| `width` | integer | yes |  |
+| `height` | integer | yes |  |
+| `identical` | boolean | yes |  |
+| `ssim` | number | yes | 0-1, 1 = identical; luma, 7x7 window, after downsampling by ssim_scale |
+| `ssim_scale` | integer | yes | downsampling factor applied before SSIM (shorter side ~256) |
+| `psnr_db` | number or null | yes | null when the images are identical |
+| `diff_ratio` | number | yes | share of pixels whose largest channel difference exceeds --fuzz |
+| `diff_pixels` | integer | yes |  |
+| `fuzz` | number | yes |  |
+| `output` | string | no | the heatmap, when -o was given |
+| `fail_below` | number | no |  |
+| `passed` | boolean | no |  |
+| `backend` | string: `magick` | yes |  |
+
+### `optimize`
+
+Re-encode an image to fit a file-size budget (--max-kb) without changing its dimensions; fails with the smallest size reached when it cannot.
+
+- Script: `scripts/optimize.py` · role: execution · backends: magick, sips
+- Writes a file: yes · `--dry-run`: yes · `--json`: yes · verify with: `check`, `look`
+
+| Argument | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `input` (positional) | string | yes |  | image file to read (never modified) |
+| `-o`, `--output` | string | yes |  | file to write; its extension picks the format (jpg, webp, avif, heic, png) |
+| `--overwrite` | boolean | no |  | allow replacing an existing output file |
+| `--json` | boolean | no |  | print one JSON object (ok:true/false) instead of text |
+| `--dry-run` | boolean | no |  | print the backend command that would run, write nothing |
+| `--max-kb` | number | yes |  | size budget in kilobytes (1 KB = 1000 bytes) |
+| `--min-quality` | integer | no | `40` | lowest quality the search may use, 1-100 (default 40) |
+| `--max-quality` | integer | no | `95` | highest quality the search may use, 1-100 (default 95) |
+| `--strip` | boolean | no |  | also drop metadata (EXIF/GPS/ICC comments) to save bytes; magick only |
+
+Output of `--json` on success (`ok: true`):
+
+| Key | Type | Always present | Description |
+| --- | --- | --- | --- |
+| `ok` | boolean | yes | `true` |
+| `input` | string | yes |  |
+| `output` | string | yes |  |
+| `format` | string | yes |  |
+| `max_kb` | number | yes |  |
+| `bytes` | integer | yes |  |
+| `kb` | number | yes |  |
+| `original_bytes` | integer | yes |  |
+| `quality` | integer or null | yes | null for PNG and for webp:target-size |
+| `method` | string: `quality-search` \| `webp:target-size` \| `lossless` | yes |  |
+| `attempts` | array | yes | every encode tried: {quality\|target_bytes, bytes} |
+| `stripped` | boolean | yes |  |
+| `actual` | object | yes | {width, height} in pixels |
+| `backend` | string: `magick` \| `sips` | yes |  |
+
+### `crop`
+
+Crop to an exact pixel rectangle, or to the largest region of an aspect ratio placed by gravity. Never clips a rectangle silently.
+
+- Script: `scripts/crop.py` · role: execution · backends: magick, sips
+- Writes a file: yes · `--dry-run`: yes · `--json`: yes · verify with: `check`, `look`
+
+| Argument | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `input` (positional) | string | yes |  | image file to read (never modified) |
+| `-o`, `--output` | string | yes |  | file to write; must differ from the input, extension picks the format |
+| `--overwrite` | boolean | no |  | allow replacing an existing output file |
+| `--json` | boolean | no |  | print one JSON object (ok:true/false) instead of text |
+| `--dry-run` | boolean | no |  | print the backend command that would run, write nothing |
+| `--x` | string | no |  | rectangle: left edge in pixels (with --y --width --height) |
+| `--y` | string | no |  | rectangle: top edge in pixels |
+| `--width` | string | no |  | rectangle: width in pixels |
+| `--height` | string | no |  | rectangle: height in pixels |
+| `--aspect` | string | no |  | crop the largest W:H region instead of a rectangle, e.g. 1:1 or 16:9 |
+| `--gravity` | string: `northwest` \| `north` \| `northeast` \| `west` \| `center` \| `east` \| `southwest` \| `south` \| `southeast` | no | `"center"` | where the --aspect region sits (default center) |
+
+Output of `--json` on success (`ok: true`):
+
+| Key | Type | Always present | Description |
+| --- | --- | --- | --- |
+| `ok` | boolean | yes | `true` |
+| `input` | string | yes |  |
+| `output` | string | yes |  |
+| `mode` | string: `rect` \| `aspect` | yes |  |
+| `box` | object | yes | {x, y, width, height} cut from the image as displayed |
+| `original` | object | yes | {width, height} in pixels |
+| `actual` | object | yes | {width, height} in pixels |
+| `backend` | string: `magick` \| `sips` | yes |  |
+
+### `pad`
+
+Pad to an aspect ratio or exact canvas with a given colour (or transparency), never scaling or cropping the image.
+
+- Script: `scripts/pad.py` · role: execution · backends: magick, sips
+- Writes a file: yes · `--dry-run`: yes · `--json`: yes · verify with: `check`, `look`
+
+| Argument | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `input` (positional) | string | yes |  | image file to read (never modified) |
+| `-o`, `--output` | string | yes |  | file to write; must differ from the input, extension picks the format |
+| `--overwrite` | boolean | no |  | allow replacing an existing output file |
+| `--json` | boolean | no |  | print one JSON object (ok:true/false) instead of text |
+| `--dry-run` | boolean | no |  | print the backend command that would run, write nothing |
+| `--aspect` | string | no |  | pad to the smallest W:H canvas that holds the image, e.g. 1:1 or 16:9 |
+| `--width` | string | no |  | exact canvas width in pixels (with --height) |
+| `--height` | string | no |  | exact canvas height in pixels (with --width) |
+| `--color` | string | yes |  | fill colour: a name (white), #RRGGBB, #RRGGBBAA, rgb()/rgba(), or none for transparent |
+| `--gravity` | string: `northwest` \| `north` \| `northeast` \| `west` \| `center` \| `east` \| `southwest` \| `south` \| `southeast` | no | `"center"` | where the image sits on the canvas (default center) |
+
+Output of `--json` on success (`ok: true`):
+
+| Key | Type | Always present | Description |
+| --- | --- | --- | --- |
+| `ok` | boolean | yes | `true` |
+| `input` | string | yes |  |
+| `output` | string | yes |  |
+| `mode` | string: `aspect` \| `canvas` | yes |  |
+| `color` | string | yes |  |
+| `original` | object | yes | {width, height} in pixels |
+| `offset` | object or null | yes | {x, y} of the image on the canvas; null on sips |
+| `actual` | object | yes | {width, height} in pixels |
+| `backend` | string: `magick` \| `sips` | yes |  |
+
+### `rotate`
+
+Rotate clockwise, mirror, or just bake EXIF orientation into the pixels.
+
+- Script: `scripts/rotate.py` · role: execution · backends: magick, sips
+- Writes a file: yes · `--dry-run`: yes · `--json`: yes · verify with: `check`, `look`
+
+| Argument | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `input` (positional) | string | yes |  | image file to read (never modified) |
+| `-o`, `--output` | string | yes |  | file to write; must differ from the input, extension picks the format |
+| `--overwrite` | boolean | no |  | allow replacing an existing output file |
+| `--json` | boolean | no |  | print one JSON object (ok:true/false) instead of text |
+| `--dry-run` | boolean | no |  | print the backend command that would run, write nothing |
+| `--degrees` | number | no |  | clockwise rotation in degrees (default 0) |
+| `--flip-horizontal` | boolean | no |  | mirror left-right (after rotating) |
+| `--flip-vertical` | boolean | no |  | mirror top-bottom (after rotating) |
+| `--background` | string | no |  | fill for the corners a non-multiple-of-90 rotation exposes (required then), or none |
+
+Output of `--json` on success (`ok: true`):
+
+| Key | Type | Always present | Description |
+| --- | --- | --- | --- |
+| `ok` | boolean | yes | `true` |
+| `input` | string | yes |  |
+| `output` | string | yes |  |
+| `degrees` | number | yes |  |
+| `flip_horizontal` | boolean | yes |  |
+| `flip_vertical` | boolean | yes |  |
+| `orientation_before` | string or null | yes | EXIF orientation of the input (magick), e.g. RightTop |
+| `original` | object | yes | {width, height} in pixels |
+| `actual` | object | yes | {width, height} in pixels |
+| `backend` | string: `magick` \| `sips` | yes |  |
+
 ### `batch`
 
 Run one of convert/resize/thumb/strip/trim over every image in a folder.
@@ -295,10 +509,11 @@ Run one of convert/resize/thumb/strip/trim over every image in a folder.
 
 | Argument | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `tool` (positional) | string: `convert` \| `resize` \| `strip` \| `thumb` \| `trim` | yes |  | tool to run on each file |
+| `tool` (positional) | string: `compare` \| `convert` \| `crop` \| `look` \| `optimize` \| `pad` \| `resize` \| `rotate` \| `strip` \| `thumb` \| `trim` | yes |  | tool to run on each file |
 | `-i`, `--input-dir` | string | yes |  | folder of images to read (not recursive) |
 | `-o`, `--output-dir` | string | yes |  | folder to write results into; must differ from --input-dir |
-| `--ext` | string | no |  | output extension for convert, e.g. webp (required for convert) |
+| `--ext` | string | no |  | output extension, e.g. webp: required for convert, optional for the other tools |
+| `--against` | string | no |  | compare only: folder holding the second image of each pair (matched by file name) |
 | `--json` | boolean | no |  | print one JSON object (ok:true/false) instead of text |
 | `--dry-run` | boolean | no |  | print the backend command that would run, write nothing |
 | `tool_args` (after `--`) | array of string | no |  | arguments forwarded to the per-file tool, e.g. ["--width", "1200", "--height", "1200"] |

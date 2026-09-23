@@ -28,6 +28,26 @@ say which sentence here no longer holds.
   input was not "an image with a border", and `--fuzz` is the knob to adjust.
   Code: `trim.run_trim()`. Test: `test_refuses_over_trim_on_solid_image`.
 
+- **`crop` refuses a rectangle that reaches outside the image** instead of clipping it.
+  A silently smaller crop breaks whatever layout the caller computed.
+  Test: `test_crop_never_clips`.
+
+- **`pad` never shrinks and has no default colour.** A canvas smaller than the image is
+  refused (resize first); the fill is a visual choice, so `--color` is required, and a
+  transparent fill into JPEG is refused because JPEG has no alpha.
+  Tests: `test_pad_never_shrinks_and_needs_a_color`,
+  `test_pad_transparent_stays_transparent_and_is_refused_for_jpeg`.
+
+- **`optimize` never changes dimensions, and writes nothing when the budget cannot be
+  met** - it reports the smallest size it reached instead. Shrinking pixels is a separate,
+  visible decision (`resize`). Test:
+  `test_unreachable_budget_fails_with_smallest_size_and_writes_nothing`.
+
+- **`optimize` falls back to `webp:target-size` for WebP when `-quality` has no effect.**
+  Ubuntu 24.04's ImageMagick 6.9.12 writes the same WebP bytes at every quality; a
+  quality search there would "succeed" at a meaningless number. `method` says which path
+  was used. Test: `test_webp_fits_by_quality_or_target_size`.
+
 ## Pixels
 
 - **Every writing tool bakes EXIF orientation into the pixels (`-auto-orient`).** A
@@ -41,6 +61,28 @@ say which sentence here no longer holds.
 - **The skill never picks a size.** `resize --width/--height` and `thumb --long-edge` are
   required with no default: dimensions come from the user or the task, never from the
   skill's taste (SKILL.md rule 4). Test: `test_sizes_are_never_defaulted`.
+
+- **`rotate` by an angle that is not a multiple of 90 needs `--background`.** The new
+  corners must be filled with something, and choosing it is the caller's call.
+  Test: `test_free_angle_needs_background`.
+
+- **`compare` computes SSIM itself, after downsampling.** ImageMagick 6 has no SSIM
+  metric and 7's differs by version; the Python implementation (Rec. 601 luma, 7x7
+  window, scikit-image's constants) gives the same number everywhere, after Wang et al.'s
+  recommended downsampling to a ~256-pixel shorter side (`ssim_scale`). Changed pixels
+  and PSNR are measured at full resolution. Alpha is flattened onto white, and images of
+  different sizes are refused rather than resampled. Tests:
+  `test_identical_is_one`, `test_counts_changed_pixels_exactly`,
+  `test_size_mismatch_is_refused`.
+
+- **Text given to ImageMagick is escaped.** `label:` text expands `%` escapes and
+  backslashes, and text starting with `@` is read from a *file* - so a caption
+  "@kajisho5" would otherwise read a file named kajisho5. Test:
+  `test_leading_at_is_text_not_a_file`.
+
+- **`look` has defaults (tile size, columns) where editing tools have none.** Its sheet
+  is for the agent to inspect, never a deliverable. Test:
+  `test_grid_has_the_promised_size_and_leaves_inputs_alone`.
 
 ## Arguments and results
 

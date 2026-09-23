@@ -6,6 +6,17 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
+- New tools: `look.py` (labelled preview sheet / before-after pair for the agent to
+  open), `compare.py` (SSIM, PSNR, changed-pixel share, optional heatmap, `--fail-below`
+  gate), `optimize.py` (fit a `--max-kb` budget by quality search, same dimensions, fails
+  with the smallest size reached), `crop.py` (exact rectangle or aspect ratio by gravity,
+  never clips), `pad.py` (aspect or canvas with a required colour, transparency-aware,
+  never shrinks), `rotate.py` (rotate, flip, or bake EXIF orientation). sips covers
+  centred crop/pad, single 90-degree rotations or flips, and JPEG/HEIC optimize.
+- `batch.py` runs the new per-file tools, makes one `look` sheet per folder, and pairs
+  files for `compare` with `--against DIR`.
+- `doctor --json` reports the fonts labels and text would use (`fonts.default`,
+  `fonts.cjk`).
 - Release automation moved to label-driven `resolve_version.py` (same design as
   ffmpeg-skill): no release for chore/ci/docs/test-only merges, no automatic major,
   `package.json` / `.claude-plugin/plugin.json` / `docs/contract.md` / `docs/roadmap.md`

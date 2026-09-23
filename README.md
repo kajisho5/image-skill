@@ -37,9 +37,10 @@ python3 scripts/check.py hero-og-final.webp --input hero.heic --expect-width 120
 
 ## What this is (and isn't)
 
-- **Is**: conversion, resize (fit/fill/exact), thumbnails, WebP, EXIF/GPS
-  strip, border trim, and format/size verification for images that land in a
-  repo - iPhone HEIC/JPEG, screenshots, OG images, README assets.
+- **Is**: conversion, resize (fit/fill/exact), thumbnails, crop, pad, rotate,
+  file-size optimization, WebP, EXIF/GPS strip, border trim, before/after
+  comparison, preview sheets, and format/size verification for images that land in
+  a repo - iPhone HEIC/JPEG, screenshots, OG images, README assets.
 - **Isn't video editing.** No FFmpeg, no frame extraction, no GIF animation -
   use a separate video skill for that. No face recognition, generative AI,
   cloud background removal, RAW development, or print ICC color management.
@@ -79,10 +80,10 @@ actually usable on this machine - don't take this README's word for it.
 
 ## Tools
 
-`probe`, `convert`, `resize`, `thumb`, `strip`, `trim`, `check`, `batch`. See
-[SKILL.md](./SKILL.md) for the rules an agent follows, and
-`python3 scripts/_contract.py contract --json` for the full machine-readable
-spec.
+`probe`, `convert`, `resize`, `thumb`, `crop`, `pad`, `rotate`, `optimize`, `strip`,
+`trim`, `check`, `look`, `compare`, `batch`. See [SKILL.md](./SKILL.md) for the rules an
+agent follows, [docs/contract.md](./docs/contract.md) for every argument and output key,
+and `python3 scripts/_contract.py contract --json` for the same spec as JSON.
 
 ## Not a video skill
 

@@ -1,6 +1,6 @@
 ---
 name: imagemagick-skill
-description: Local image editing (probe, convert, resize, thumbnail, EXIF/GPS strip, trim) for files that land in a repo - iPhone HEIC/JPEG, screenshots, OG images, README assets. Use when asked to convert, resize, thumbnail, make a WebP/OG image, strip GPS/EXIF, trim a border, or check an image's format/dimensions. Not for video, GIF animation, frame extraction, face recognition, generative AI, or RAW/ICC color work.
+description: Local ImageMagick image editing for files that land in a repo - iPhone HEIC/JPEG, screenshots, OG images, README assets. Use when asked to convert, resize, thumbnail, crop, pad, rotate, compress to a file size, make a WebP/OG image, strip GPS/EXIF, trim a border, compare two images, check an image's format/dimensions, or show/preview images. Not for video, GIF animation, frame extraction, face recognition, background removal, generative AI, or RAW/ICC color work.
 ---
 
 # imagemagick-skill
@@ -22,7 +22,7 @@ speaks JSON and never overwrites its input.
 
 - Video, GIF animation, or extracting frames from video - use a
   video/FFmpeg-based skill instead, not this one
-- Face recognition, background removal, generative/AI image editing
+- Face recognition, AI background removal, generative/AI image editing
 - RAW development, print-grade ICC color management
 - PDF conversion (out of scope for v0.1)
 
@@ -34,14 +34,18 @@ speaks JSON and never overwrites its input.
 2. **Never overwrite the input.** Every tool that writes a file requires
    `-o/--output` and refuses to run if it resolves to the same path as the
    input, or if the output already exists (unless `--overwrite` is passed).
-3. **Probe first, check last.** Run `probe.py` on the input before editing to
-   know what you're actually working with (format, size, alpha, GPS). After
-   writing an output, run `check.py` to confirm it opened correctly, matches
-   what you promised (size/format), and didn't clobber the input.
-4. **You don't choose sizes.** Target dimensions, formats, and quality come
-   from the user or the calling task - this skill executes, it doesn't
-   design. If no size was given for a resize/thumbnail, ask instead of
-   guessing.
+3. **Probe first, check last, then look.** Run `probe.py` on the input before
+   editing to know what you're actually working with (format, size, alpha, GPS).
+   After writing an output, run `check.py` to confirm it opened correctly, matches
+   what you promised (size/format), and didn't clobber the input. When the picture
+   itself changed (crop, pad, rotate, resize fill, optimize), run `look.py` and open
+   the PNG it writes before saying it's done - `check` proves the numbers, `look`
+   lets you see the result. Use `look.py --pair before after` or `compare.py` for
+   before/after questions.
+4. **You don't choose sizes, crops or colours.** Target dimensions, aspect
+   ratios, fill colours, file-size budgets and formats come from the user or the
+   calling task - this skill executes, it doesn't design. If no size was given
+   for a resize/thumbnail, or no colour for padding, ask instead of guessing.
 5. **Check the environment before relying on a format.** Run
    `python3 scripts/_contract.py doctor --json` once per session before
    using `convert`/`resize`/`thumb` for HEIC or WebP, or before `strip`/
@@ -85,13 +89,21 @@ machine-readable spec (required/optional args per tool).
 | `convert.py` | Change format (HEIC->JPEG/PNG/WebP, PNG->WebP, ...) |
 | `resize.py` | `fit` (default, no distortion), `fill` (cover+crop), `exact` (forced) |
 | `thumb.py` | Thumbnail by long edge, aspect preserved, never upscales |
+| `crop.py` | Exact rectangle (`--x --y --width --height`) or largest `--aspect W:H` region by `--gravity`; never clips |
+| `pad.py` | Margins to an `--aspect` or exact canvas with a required `--color` (`none` = transparent); never shrinks |
+| `rotate.py` | Clockwise `--degrees`, `--flip-horizontal/--flip-vertical`, or no flag = bake EXIF orientation |
+| `optimize.py` | Fit a file-size budget (`--max-kb`) by searching quality; same dimensions; fails with the smallest size reached |
 | `strip.py` | Remove GPS/EXIF, applying orientation first (magick only) |
 | `trim.py` | Trim a solid-color border, fails instead of over-trimming (magick only) |
 | `check.py` | Verify an output: opens, matches size/format, didn't overwrite input |
-| `batch.py` | Run one of the above over every image in a folder |
+| `look.py` | Labelled preview sheet (or `--pair` before/after) to open and look at (magick only) |
+| `compare.py` | SSIM / PSNR / changed-pixel share of two same-size images, optional heatmap (`-o`), `--fail-below` gate (magick only) |
+| `batch.py` | Run a tool over every image in a folder (`look` makes one sheet; `compare` pairs with `--against DIR`) |
 | `_contract.py` | `contract` (tool spec) / `doctor` (environment check) |
 
-Backend: ImageMagick `magick` first; macOS `sips` covers a reduced subset of
-`convert`/`resize`/`thumb` when `magick` isn't installed. `strip` and `trim`
-always require `magick`. No cloud calls, no API keys, no pip dependencies -
+Backend: ImageMagick `magick` first; macOS `sips` covers a reduced subset when
+`magick` isn't installed (`convert`, `resize` fit, `thumb`, centred `crop --aspect`,
+centred `pad` with a `#RRGGBB` colour, a single 90-degree `rotate` or flip, JPEG/HEIC
+`optimize`). `strip`, `trim`, `look` and `compare` always require `magick` - doctor's
+`tools` field says what this machine can run. No cloud calls, no API keys, no pip dependencies -
 Python 3.9 standard library plus whichever binary is already on the machine.
