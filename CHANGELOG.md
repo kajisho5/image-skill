@@ -6,6 +6,12 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
+(nothing yet)
+
+## 0.7.0
+
+_Automated release: version and notes generated from pull requests merged since 0.6.2._
+
 - New: ImageMagick 6 without a `magick` command (Debian/Ubuntu's apt package) is used
   directly: the tools run its `convert`, and `identify` for what `magick identify` did.
   No shim is needed any more. `doctor --json` reports `backends.magick.kind` as `"magick"`
@@ -15,6 +21,8 @@ under "Unreleased" in a PR move into that release's section.
 - Roadmap rows marked `| done | main |` get the version of the release that ships them
   (`bump_roadmap_md.py`).
 (nothing yet)
+
+- feat: use ImageMagick 6 directly when there is no magick command (#21)
 
 ## 0.6.2
 
