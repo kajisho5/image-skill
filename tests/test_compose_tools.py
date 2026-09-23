@@ -21,8 +21,11 @@ GRAY, RED, WHITE = (128, 128, 128), (255, 0, 0), (255, 255, 255)
 
 
 def mean_rgb(path, x, y, w, h):
+    # -colorspace sRGB first: ImageMagick 7 writes an all-grey result as a one-channel
+    # greyscale PNG, and reading .g/.b of that image gives 0, not the grey value.
     fmt = ",".join(f"%[fx:int(255*mean.{c})]" for c in "rgb")
-    out = subprocess.run([which_magick(), path, "-crop", f"{w}x{h}+{x}+{y}", "+repage", "-format", fmt, "info:"],
+    out = subprocess.run([which_magick(), path, "-colorspace", "sRGB", "-crop", f"{w}x{h}+{x}+{y}", "+repage",
+                          "-format", fmt, "info:"],
                          capture_output=True, text=True, check=True).stdout
     return tuple(int(v) for v in out.split(","))
 
