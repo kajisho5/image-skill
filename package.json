@@ -1,9 +1,9 @@
 {
-  "name": "image-skill",
+  "name": "imagemagick-skill",
   "version": "0.2.2",
-  "description": "Give your coding agent a local image editor that does not overwrite originals.",
+  "description": "Agent Skill that gives coding agents (Claude Code, Cursor, Codex) a local ImageMagick image editor that never overwrites originals: probe, convert, resize, thumbnail, EXIF/GPS strip, trim, check. Formerly image-skill.",
   "bin": {
-    "image-skill": "bin/install.js"
+    "imagemagick-skill": "bin/install.js"
   },
   "files": [
     "bin",
@@ -16,17 +16,21 @@
     "node": ">=16"
   },
   "license": "MIT",
+  "author": "kajisho5",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kajisho5/image-skill"
+    "url": "git+https://github.com/kajisho5/image-skill.git"
   },
+  "homepage": "https://github.com/kajisho5/image-skill#readme",
+  "bugs": "https://github.com/kajisho5/image-skill/issues",
   "keywords": [
-    "claude",
+    "imagemagick",
+    "image",
+    "image-processing",
+    "agent-skill",
     "claude-code",
     "cursor",
     "codex",
-    "imagemagick",
-    "image",
     "skill",
     "agent"
   ]

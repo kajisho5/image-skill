@@ -66,12 +66,25 @@ jobs:
           export HOME="$RUNNER_TEMP/fake-home"
           mkdir -p "$HOME"
           node bin/install.js
-          test -f "$HOME/.claude/skills/image-skill/SKILL.md"
+          test -f "$HOME/.claude/skills/imagemagick-skill/SKILL.md"
           node bin/install.js --cursor
-          test -f "$HOME/.cursor/skills/image-skill/SKILL.md"
+          test -f "$HOME/.cursor/skills/imagemagick-skill/SKILL.md"
           node bin/install.js --codex
-          test -f "$HOME/.codex/skills/image-skill/SKILL.md"
+          test -f "$HOME/.agents/skills/imagemagick-skill/SKILL.md"
           node bin/install.js --uninstall
-          test ! -d "$HOME/.claude/skills/image-skill"
+          test ! -d "$HOME/.claude/skills/imagemagick-skill"
           node bin/install.js doctor --json
           node bin/install.js contract --json
+      - name: Install from the packed tarball through npx, as a user would
+        run: |
+          set -e
+          npm pack --pack-destination "$RUNNER_TEMP"
+          TARBALL=$(ls "$RUNNER_TEMP"/imagemagick-skill-*.tgz)
+          export HOME="$RUNNER_TEMP/npx-home"
+          mkdir -p "$HOME"
+          cd "$RUNNER_TEMP"
+          npx --yes --package "$TARBALL" imagemagick-skill
+          test -f "$HOME/.claude/skills/imagemagick-skill/scripts/_contract.py"
+          npx --yes --package "$TARBALL" imagemagick-skill doctor --json
+          npx --yes --package "$TARBALL" imagemagick-skill --uninstall
+          test ! -d "$HOME/.claude/skills/imagemagick-skill"

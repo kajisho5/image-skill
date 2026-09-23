@@ -1,4 +1,4 @@
-"""Shared helpers for image-skill scripts.
+"""Shared helpers for imagemagick-skill scripts.
 
 Backend precedence: ImageMagick `magick` first, macOS `sips` as a partial
 fallback. Standard library only - no third-party Python packages, no network

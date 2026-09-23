@@ -1,23 +1,25 @@
-# image-skill
+# imagemagick-skill
 
 [![test](https://github.com/kajisho5/image-skill/actions/workflows/test.yml/badge.svg)](https://github.com/kajisho5/image-skill/actions/workflows/test.yml)
 
 Give your coding agent a local image editor that does not overwrite originals.
 
 ```bash
-npx image-skill                 # installs into ~/.claude/skills/image-skill (default)
-npx image-skill --cursor        # ~/.cursor/skills/image-skill
-npx image-skill --codex         # ~/.codex/skills/image-skill
-npx image-skill --all           # all three of the above
-npx image-skill --dir <parent>  # <parent>/image-skill
-npx image-skill --project       # ./.claude/skills/image-skill (this project only)
-npx image-skill --uninstall     # remove the installed target(s)
-npx image-skill doctor [--json] # check for magick/sips and what's actually usable
-npx image-skill contract --json # machine-readable tool spec
-npx image-skill --help
+npx imagemagick-skill                 # installs into ~/.claude/skills/imagemagick-skill (default)
+npx imagemagick-skill --cursor        # ~/.cursor/skills/imagemagick-skill
+npx imagemagick-skill --codex         # ~/.agents/skills/imagemagick-skill
+npx imagemagick-skill --all           # all three of the above
+npx imagemagick-skill --dir <parent>  # <parent>/imagemagick-skill
+npx imagemagick-skill --project       # ./.claude/skills/imagemagick-skill (this project only)
+npx imagemagick-skill --uninstall     # remove the installed target(s)
+npx imagemagick-skill doctor [--json] # check for magick/sips and what's actually usable
+npx imagemagick-skill contract --json # machine-readable tool spec
+npx imagemagick-skill --help
 ```
 
 Already installed? Re-running replaces the copy with whatever version you run - reinstall anytime to update.
+
+**Renamed from `image-skill`.** The npm package `image-skill` is an unrelated project by another author - `npx image-skill` does not install this skill. Installing `imagemagick-skill` removes an old `image-skill` copy of *this* project from the same skills folder, but only when its contents prove it came from this repository; anything else is left in place with a warning.
 
 ## Example
 
@@ -70,7 +72,7 @@ and make sure `magick` is on PATH. There is no `sips` fallback on Windows.
 
 Whatever the platform, the source of truth is:
 ```bash
-npx image-skill doctor
+npx imagemagick-skill doctor
 ```
 It reports exactly which backend is present and which formats/tools are
 actually usable on this machine - don't take this README's word for it.

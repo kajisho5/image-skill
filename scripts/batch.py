@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""batch.py - run one image-skill tool (convert/resize/thumb/strip/trim) over every
+"""batch.py - run one imagemagick-skill tool (convert/resize/thumb/strip/trim) over every
 image in a folder, writing to a separate output folder. Never overwrites inputs or
 existing outputs; a single bad file is recorded as a failure and the rest of the
 batch still runs."""
@@ -24,7 +24,7 @@ IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".heic", ".heif", ".tif", ".tiff", ".bmp"
 
 def build_parser():
     parser = JSONArgumentParser(
-        description="Run an image-skill tool over every image in a folder",
+        description="Run an imagemagick-skill tool over every image in a folder",
         epilog="Extra args after -- are forwarded to the tool, e.g.: "
         "batch.py resize -i ./photos -o ./out --json -- --width 1200 --height 1200 --mode fit",
     )
