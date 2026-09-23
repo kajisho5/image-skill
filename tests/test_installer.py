@@ -63,6 +63,7 @@ class InstallerTests(unittest.TestCase):
         with open(skill_md) as f:
             self.assertIn("name: imagemagick-skill", f.read())
         self.assertTrue(os.path.isfile(self.home_path(".claude", "skills", "imagemagick-skill", "scripts", "_contract.py")))
+        self.assertTrue(os.path.isfile(self.home_path(".claude", "skills", "imagemagick-skill", "mcp", "server.py")))
 
     def test_codex_installs_where_codex_reads_user_skills(self):
         r = self.install("--codex")
@@ -176,7 +177,7 @@ class PackageContentsTests(unittest.TestCase):
         files = {f["path"] for f in json.loads(proc.stdout)[0]["files"]}
         self.assertFalse([f for f in files if f.endswith(".pyc") or "__pycache__" in f])
         for required in ("bin/install.js", "SKILL.md", "package.json", "scripts/_contract.py", "scripts/_common.py",
-                         "scripts/presets.json"):
+                         "scripts/presets.json", "mcp/server.py"):
             self.assertIn(required, files)
 
 

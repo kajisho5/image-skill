@@ -515,6 +515,82 @@ def tool_spec(name):
     }
 
 
+# Transport flags the MCP server sets itself; they are not tool arguments there.
+MCP_TRANSPORT_FLAGS = ("json",)
+
+MCP_INSTRUCTIONS = (
+    "Local ImageMagick image editing. Every tool writes a new file (-o/output must differ from "
+    "the input and never already exist unless overwrite is true) and returns its JSON result. "
+    "Arguments are the input_schema property names; positional ones are passed by name too. "
+    "Use absolute file paths. Run probe before editing, check (and look, to see it) after."
+)
+
+
+def mcp_tool(spec):
+    """tools/list entry for one contract tool: name, description, inputSchema - all
+    derived from the contract, so the MCP surface cannot drift from the scripts."""
+    src = spec["input_schema"]
+    positional = list(src["positional"])
+    props = {}
+    for dest, prop in src["properties"].items():
+        if dest in MCP_TRANSPORT_FLAGS:
+            continue
+        out = {"type": prop["type"]}
+        if prop["type"] == "array":
+            out["items"] = dict(prop.get("items", {"type": "string"}))
+        desc = prop.get("description", "")
+        if dest in positional:
+            desc = f"(positional {positional.index(dest) + 1}) {desc}".strip()
+        elif prop.get("cli") == "after --":
+            desc = f"(passed after --) {desc}".strip()
+        if desc:
+            out["description"] = desc
+        for key in ("enum", "default"):
+            if key in prop:
+                out[key] = prop[key]
+        props[dest] = out
+    description = spec["description"]
+    for group in src.get("mutually_exclusive", []):
+        description += f" Give exactly one of: {', '.join(group)}."
+    schema = {"type": "object", "properties": props, "additionalProperties": False}
+    required = [d for d in src["required"] if d not in MCP_TRANSPORT_FLAGS]
+    if required:
+        schema["required"] = required
+    return {"name": spec["name"], "description": description, "inputSchema": schema}
+
+
+def mcp_argv(spec, arguments):
+    """Structured MCP arguments -> the script's argv (plus --json), using the contract's
+    own CLI mapping. Raises ValueError for arguments the tool does not have."""
+    props = spec["input_schema"]["properties"]
+    unknown = sorted(k for k in arguments if k not in props or k in MCP_TRANSPORT_FLAGS)
+    if unknown:
+        raise ValueError(f"unknown argument(s) for {spec['name']}: {', '.join(unknown)}")
+    argv, after = [], []
+    for dest in spec["input_schema"]["positional"]:
+        value = arguments.get(dest)
+        if value is None:
+            continue
+        argv += [str(v) for v in value] if isinstance(value, list) else [str(value)]
+    for dest, value in arguments.items():
+        prop = props[dest]
+        if dest in spec["input_schema"]["positional"] or value is None or value is False:
+            continue
+        if prop["cli"] == "after --":
+            after += [str(v) for v in (value if isinstance(value, list) else [value])]
+            continue
+        flag = next((c for c in prop["cli"] if c.startswith("--")), prop["cli"][0])
+        if value is True:
+            argv.append(flag)
+        elif isinstance(value, list):
+            for v in value:
+                argv += [flag, str(v)]
+        else:
+            argv += [flag, str(value)]
+    argv.append("--json")
+    return argv + (["--"] + after if after else [])
+
+
 def build_contract_payload():
     tools = [tool_spec(name) for name in public_tools()]
     return {
@@ -529,6 +605,7 @@ def build_contract_payload():
             "entrypoints": {
                 "cli": "python3 scripts/<tool>.py",
                 "contract": "python3 scripts/_contract.py contract --json",
+                "mcp": "python3 mcp/server.py",
                 "doctor": "python3 scripts/_contract.py doctor --json",
             },
         },

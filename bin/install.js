@@ -8,6 +8,7 @@ const { spawnSync } = require("child_process");
 
 const PKG_ROOT = path.join(__dirname, "..");
 const SCRIPTS_SRC = path.join(PKG_ROOT, "scripts");
+const MCP_SRC = path.join(PKG_ROOT, "mcp");
 const SKILL_MD_SRC = path.join(PKG_ROOT, "SKILL.md");
 const PACKAGE_JSON_SRC = path.join(PKG_ROOT, "package.json");
 const SKILL_NAME = "imagemagick-skill";
@@ -174,6 +175,7 @@ function installTo(dir) {
   fs.copyFileSync(SKILL_MD_SRC, path.join(dir, "SKILL.md"));
   fs.copyFileSync(PACKAGE_JSON_SRC, path.join(dir, "package.json"));
   copyDir(SCRIPTS_SRC, path.join(dir, "scripts"));
+  if (fs.existsSync(MCP_SRC)) copyDir(MCP_SRC, path.join(dir, "mcp"));
 }
 
 function warnIfNoBackend() {

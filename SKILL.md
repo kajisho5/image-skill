@@ -110,6 +110,9 @@ machine-readable spec (required/optional args per tool).
 | `batch.py` | Run a tool over every image in a folder (`look`/`montage` make one sheet; `icons` one folder per image; `compare` pairs with `--against DIR`) |
 | `_contract.py` | `contract` (tool spec) / `doctor` (environment check) |
 
+The same tools are available over MCP (`mcp/server.py`, generated from the contract) for
+clients that don't load skills.
+
 Backend: ImageMagick `magick` first; macOS `sips` covers a reduced subset when
 `magick` isn't installed (`convert`, `resize` fit, `thumb`, centred `crop --aspect`,
 centred `pad` with a `#RRGGBB` colour, a single 90-degree `rotate` or flip, JPEG/HEIC
