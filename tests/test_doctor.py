@@ -17,7 +17,7 @@ class TestDoctorNoBackend(unittest.TestCase):
 
         self.assertFalse(payload["ok"])
         self.assertIn("reason", payload)
-        for tool in ("probe", "convert", "resize", "thumb", "strip", "trim", "check", "batch"):
+        for tool in _contract.TOOL_META:
             self.assertFalse(payload["tools"][tool]["usable"], f"{tool} should be unusable with no backend")
         self.assertFalse(payload["heic"]["usable"])
         self.assertFalse(payload["webp"]["usable"])
@@ -37,12 +37,13 @@ class TestDoctorNoBackend(unittest.TestCase):
 
 
 class TestContract(unittest.TestCase):
-    def test_contract_lists_all_eight_tools(self):
+    def test_contract_lists_every_tool(self):
         payload = _contract.build_contract_payload()
         names = {t["name"] for t in payload["tools"]}
         self.assertEqual(
             names,
-            {"probe", "convert", "resize", "thumb", "strip", "trim", "check", "batch"},
+            {"probe", "convert", "resize", "thumb", "strip", "trim", "check", "batch",
+             "look", "compare", "optimize", "crop", "pad", "rotate"},
         )
         self.assertTrue(payload["ok"])
         self.assertIn("rules", payload)

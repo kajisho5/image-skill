@@ -9,6 +9,7 @@ import argparse
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -167,3 +168,220 @@ def identify_dims(path):
         return width, height
 
     raise ImageSkillError("no usable backend: install ImageMagick (magick) or, on macOS, use sips")
+
+
+NO_BACKEND = "no usable backend: install ImageMagick (magick) or, on macOS, use sips"
+
+GRAVITIES = ("northwest", "north", "northeast", "west", "center", "east", "southwest", "south", "southeast")
+
+# Output formats that can carry an alpha channel; a transparent fill into anything
+# else (JPEG, BMP) would silently turn black or white, so tools refuse it instead.
+ALPHA_CAPABLE_EXTS = {"png", "webp", "gif", "tif", "tiff", "heic", "heif", "avif", "ico"}
+
+
+def ext_of(path):
+    return os.path.splitext(path)[1].lstrip(".").lower()
+
+
+def require_input(path, label="input"):
+    if not os.path.isfile(path):
+        raise ImageSkillError(f"{label} not found: {path}")
+
+
+def prepare_output(input_paths, output_path, overwrite):
+    """The output rules every writing tool shares: never an input, never an existing
+    file unless --overwrite, and its directory must already exist."""
+    for path in input_paths:
+        check_output_not_input(path, output_path)
+    check_output_not_exists(output_path, allow_overwrite=overwrite)
+    parent = os.path.dirname(os.path.abspath(output_path))
+    if not os.path.isdir(parent):
+        raise ImageSkillError(f"output directory does not exist: {parent}")
+
+
+def add_output_args(parser, output_required=True, output_help=None):
+    parser.add_argument(
+        "-o",
+        "--output",
+        required=output_required,
+        help=output_help or "file to write; must differ from the input, extension picks the format",
+    )
+    parser.add_argument("--overwrite", action="store_true", help="allow replacing an existing output file")
+    parser.add_argument("--json", action="store_true", help="print one JSON object (ok:true/false) instead of text")
+    parser.add_argument("--dry-run", action="store_true", help="print the backend command that would run, write nothing")
+
+
+def select_backend(sips_ok):
+    """Return ("magick", path) or, when magick is missing and sips can do this job,
+    ("sips", path). sips_ok is True or a string explaining why sips cannot."""
+    magick = which_magick()
+    if magick:
+        return "magick", magick
+    sips = which_sips()
+    if sips and sips_ok is True:
+        return "sips", sips
+    if sips:
+        raise ImageSkillError(f"needs ImageMagick (magick): {sips_ok}")
+    raise ImageSkillError(NO_BACKEND)
+
+
+def finish_output(path, backend):
+    if not os.path.isfile(path) or os.path.getsize(path) == 0:
+        raise ImageSkillError(f"backend reported success but {path} is missing or empty")
+    verify_output_format(path, backend)
+
+
+def magick_info(magick, path, fmt, auto_orient=True):
+    """Read properties of the first frame, as displayed (EXIF orientation applied),
+    through `magick in[0] -auto-orient -format FMT info:`."""
+    cmd = [magick, f"{path}[0]"] + (["-auto-orient"] if auto_orient else []) + ["-format", fmt, "info:"]
+    return run(cmd)["stdout"]
+
+
+def oriented_dims(path):
+    """(width, height) as displayed. Geometry a tool computes (crop boxes, canvases)
+    must use these, since every magick write applies -auto-orient first."""
+    magick = which_magick()
+    if magick:
+        w, h = magick_info(magick, path, "%w %h").split()
+        return int(w), int(h)
+    return identify_dims(path)
+
+
+_COLOR_RE = re.compile(
+    r"^(#[0-9a-fA-F]{3,4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|[a-zA-Z]+[0-9]{0,2}"
+    r"|(?:s?rgba?|hsla?)\(\s*[0-9.]+%?\s*(?:,\s*[0-9.]+%?\s*){2,3}\))$"
+)
+
+
+def color_arg(value):
+    """argparse type for a fill colour: a name (white, none), #RGB/#RGBA/#RRGGBB/
+    #RRGGBBAA, or rgb()/rgba()/hsl()/hsla(). Anything else is refused rather than
+    handed to ImageMagick's option parser."""
+    if not _COLOR_RE.match(value.strip()):
+        raise argparse.ArgumentTypeError(
+            f"invalid color {value!r}: use a name (white, none), #RRGGBB, #RRGGBBAA, or rgb(...)/rgba(...)"
+        )
+    return value.strip()
+
+
+def color_is_transparent(color):
+    c = color.lower().replace(" ", "")
+    if c in ("none", "transparent"):
+        return True
+    if re.fullmatch(r"#[0-9a-f]{4}", c):
+        return c[-1] != "f"
+    if re.fullmatch(r"#[0-9a-f]{8}", c):
+        return c[-2:] != "ff"
+    m = re.fullmatch(r"(?:s?rgba|hsla)\(([^)]*)\)", c)
+    if m:
+        alpha = m.group(1).split(",")[-1]
+        try:
+            return (float(alpha[:-1]) / 100 if alpha.endswith("%") else float(alpha)) < 1
+        except ValueError:
+            return True
+    return False
+
+
+def ratio_arg(value):
+    """argparse type for an aspect ratio "W:H" (e.g. 16:9, 1:1, 1.91:1)."""
+    m = re.fullmatch(r"\s*([0-9]*\.?[0-9]+)\s*:\s*([0-9]*\.?[0-9]+)\s*", value)
+    if not m or float(m.group(1)) <= 0 or float(m.group(2)) <= 0:
+        raise argparse.ArgumentTypeError(f"invalid aspect ratio {value!r}: use W:H, e.g. 16:9")
+    return float(m.group(1)), float(m.group(2))
+
+
+def positive_int(value):
+    try:
+        n = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected a whole number, got {value!r}")
+    if n <= 0:
+        raise argparse.ArgumentTypeError(f"must be greater than 0, got {n}")
+    return n
+
+
+def non_negative_int(value):
+    try:
+        n = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected a whole number, got {value!r}")
+    if n < 0:
+        raise argparse.ArgumentTypeError(f"must be 0 or more, got {n}")
+    return n
+
+
+def gravity_offset(gravity, outer_w, outer_h, inner_w, inner_h):
+    """Top-left (x, y) of an inner box placed inside an outer one by gravity."""
+    free_w, free_h = outer_w - inner_w, outer_h - inner_h
+    x = 0 if gravity.endswith("west") else free_w if gravity.endswith("east") else free_w // 2
+    y = 0 if gravity.startswith("north") else free_h if gravity.startswith("south") else free_h // 2
+    return x, y
+
+
+def escape_magick_text(text):
+    """Make text render literally in label:/-annotate. ImageMagick expands %-escapes
+    (%w, %[EXIF:...]), processes backslash escapes, and reads a *file* when the text
+    starts with '@' - so user text is escaped rather than passed through."""
+    escaped = text.replace("\\", "\\\\").replace("%", "%%")
+    if escaped.startswith("@"):
+        escaped = "\\" + escaped
+    return escaped
+
+
+# First existing file wins. "default" must cover Latin text; "cjk" must cover Japanese,
+# Chinese and Korean, since a Latin-only font renders them as empty boxes.
+FONT_CANDIDATES = {
+    "default": [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/Library/Fonts/Arial.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+        "C:\\Windows\\Fonts\\arial.ttf",
+    ],
+    "cjk": [
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf",
+        "/usr/share/fonts/truetype/fonts-japanese-gothic.ttf",
+        "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc",
+        "/System/Library/Fonts/Hiragino Sans GB.ttc",
+        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "C:\\Windows\\Fonts\\YuGothM.ttc",
+        "C:\\Windows\\Fonts\\msgothic.ttc",
+    ],
+}
+
+_CJK_RE = re.compile("[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uff66-\uff9f]")
+
+
+def find_fonts():
+    return {kind: next((p for p in paths if os.path.isfile(p)), None) for kind, paths in FONT_CANDIDATES.items()}
+
+
+def needs_cjk_font(text):
+    return bool(_CJK_RE.search(text))
+
+
+def resolve_font(text, explicit=None):
+    """Font file for rendering `text`: the caller's --font if given (must exist),
+    else a CJK-capable font when the text needs one, else the default font."""
+    if explicit:
+        if not os.path.isfile(explicit):
+            raise ImageSkillError(f"font file not found: {explicit}")
+        return explicit
+    fonts = find_fonts()
+    if needs_cjk_font(text):
+        if not fonts["cjk"]:
+            raise ImageSkillError(
+                "the text contains Japanese/Chinese/Korean characters but no CJK font was found; "
+                "pass --font /path/to/font.ttc (doctor --json lists fonts)"
+            )
+        return fonts["cjk"]
+    if not fonts["default"]:
+        raise ImageSkillError("no usable font found; pass --font /path/to/font.ttf (doctor --json lists fonts)")
+    return fonts["default"]

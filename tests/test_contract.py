@@ -46,7 +46,7 @@ class ContractShapeTests(unittest.TestCase):
             props = tool["input_schema"]["properties"]
             self.assertTrue(tool["supports_json"], name)
             self.assertFalse(tool["mutates_input"], name)
-            if tool["writes_output"] and name != "batch":
+            if tool["writes_output"] and name != "batch" and not tool["output_optional"]:
                 self.assertIn("output", tool["input_schema"]["required"], name)
                 self.assertIn("overwrite", props, name)
             if tool["writes_output"]:
@@ -99,6 +99,15 @@ class DocsAgreeWithContractTests(unittest.TestCase):
                 defined.update(re.findall(r"def (test_[a-z0-9_]+)\(", _read("tests", f)))
         self.assertEqual(sorted(names - defined), [])
 
+    def test_skill_md_stays_under_the_30kb_budget(self):
+        # SKILL.md is loaded into every agent session (ffmpeg-skill keeps the same budget).
+        self.assertLess(len(_read("SKILL.md").encode("utf-8")), 30_000)
+
+    def test_skill_md_names_every_tool(self):
+        skill = _read("SKILL.md")
+        for name in _contract.TOOL_META:
+            self.assertIn(f"`{name}.py`", skill)
+
     def test_skill_md_frontmatter_name_matches_package(self):
         name = json.loads(_read("package.json"))["name"]
         self.assertIn(f"\nname: {name}\n", _read("SKILL.md"))
@@ -127,6 +136,12 @@ class OutputSchemaConformanceTests(unittest.TestCase):
             "strip": [self.src, "-o", o("s.png")],
             "trim": [self.src, "-o", o("tr.png")],
             "check": [self.src, "--expect-width", "60"],
+            "look": [self.src, os.path.join(self.dir_in, "a.png"), "-o", o("look.png")],
+            "compare": [self.src, self.src, "-o", o("heat.png")],
+            "optimize": [self.src, "-o", o("opt.jpg"), "--max-kb", "50"],
+            "crop": [self.src, "-o", o("crop.png"), "--aspect", "1:1"],
+            "pad": [self.src, "-o", o("pad.png"), "--aspect", "1:1", "--color", "white"],
+            "rotate": [self.src, "-o", o("rot.png"), "--degrees", "90"],
             "batch": ["thumb", "-i", self.dir_in, "-o", o("batch-out"), "--", "--long-edge", "10"],
         }
 
