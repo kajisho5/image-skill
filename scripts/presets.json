@@ -1,0 +1,94 @@
+{
+  "_about": "Named sizes for preset.py. Every entry cites the platform's own documentation (checked 2026-09-23) with the sentence that states the size. A platform without a current official size is left out on purpose - X/Twitter's card docs no longer state one. preset.py is only used when the user names a preset; the skill never picks a size on its own.",
+  "og": {
+    "width": 1200,
+    "height": 630,
+    "description": "Open Graph / Facebook link-share image",
+    "source": "https://developers.facebook.com/docs/sharing/webmasters/images/",
+    "quote": "Use images that are at least 1200 x 630 pixels for the best display on high resolution devices."
+  },
+  "linkedin-share": {
+    "width": 1200,
+    "height": 627,
+    "description": "LinkedIn shared-link / page post image",
+    "source": "https://www.linkedin.com/help/linkedin/answer/a521928",
+    "quote": "Minimum image dimensions: 1200 (w) x 627 (h) pixels"
+  },
+  "instagram-square": {
+    "width": 1080,
+    "height": 1080,
+    "description": "Instagram feed, square (1:1, inside the documented 1.91:1-3:4 range at 1080 wide)",
+    "source": "https://www.facebook.com/help/instagram/1631821640426723",
+    "quote": "Upload a photo with a width of at least 1080 pixels with an aspect ratio between 1.91:1 and 3:4."
+  },
+  "instagram-portrait": {
+    "width": 1080,
+    "height": 1440,
+    "description": "Instagram feed, tallest documented portrait (3:4)",
+    "source": "https://www.facebook.com/help/instagram/1631821640426723",
+    "quote": "we keep that photo at its original resolution as long as the photo's aspect ratio is between 1.91:1 and 3:4."
+  },
+  "instagram-landscape": {
+    "width": 1080,
+    "height": 566,
+    "description": "Instagram feed, widest documented landscape (1.91:1)",
+    "source": "https://www.facebook.com/help/instagram/1631821640426723",
+    "quote": "we keep that photo at its original resolution as long as the photo's aspect ratio is between 1.91:1 and 3:4."
+  },
+  "instagram-reel-cover": {
+    "width": 420,
+    "height": 654,
+    "description": "Instagram Reels cover photo",
+    "source": "https://www.facebook.com/help/instagram/1038071743007909/",
+    "quote": "The recommended size for cover photos is 420px by 654px (or 1:1.55 ratio)."
+  },
+  "instagram-story": {
+    "width": 1440,
+    "height": 2560,
+    "description": "Instagram Stories 9:16 (from Meta's ads guide; no organic Stories size is documented)",
+    "source": "https://www.facebook.com/business/ads-guide/update/image/instagram-story",
+    "quote": "Resolution: 1440 x 2560 pixels"
+  },
+  "youtube-thumbnail": {
+    "width": 3840,
+    "height": 2160,
+    "description": "YouTube video thumbnail (16:9; the documented minimum width is 640)",
+    "source": "https://support.google.com/youtube/answer/72431",
+    "quote": "Have a resolution of 3840 x 2160 pixels for videos and 2160 x 3840 for Shorts, with a minimum width of 640 pixels for videos"
+  },
+  "youtube-shorts-thumbnail": {
+    "width": 2160,
+    "height": 3840,
+    "description": "YouTube Shorts thumbnail (9:16)",
+    "source": "https://support.google.com/youtube/answer/72431",
+    "quote": "Have a resolution of 3840 x 2160 pixels for videos and 2160 x 3840 for Shorts"
+  },
+  "pinterest-pin": {
+    "width": 1000,
+    "height": 1500,
+    "description": "Pinterest standard pin (2:3)",
+    "source": "https://help.pinterest.com/en/business/article/pinterest-product-specs",
+    "quote": "We recommend using a 2:3 aspect ratio, or 1000 x 1500 pixels."
+  },
+  "apple-touch-icon": {
+    "width": 180,
+    "height": 180,
+    "description": "apple-touch-icon for iPhone (shown in Apple's markup example)",
+    "source": "https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html",
+    "quote": "<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"touch-icon-iphone-retina.png\">"
+  },
+  "pwa-icon-192": {
+    "width": 192,
+    "height": 192,
+    "description": "Web app manifest icon, small",
+    "source": "https://web.dev/articles/add-manifest",
+    "quote": "For Chromium, you must provide at least a 192x192 pixel icon and a 512x512 pixel icon."
+  },
+  "pwa-icon-512": {
+    "width": 512,
+    "height": 512,
+    "description": "Web app manifest icon, large",
+    "source": "https://web.dev/articles/add-manifest",
+    "quote": "For Chromium, you must provide at least a 192x192 pixel icon and a 512x512 pixel icon."
+  }
+}

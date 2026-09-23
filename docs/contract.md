@@ -500,16 +500,195 @@ Output of `--json` on success (`ok: true`):
 | `actual` | object | yes | {width, height} in pixels |
 | `backend` | string: `magick` \| `sips` | yes |  |
 
+### `adjust`
+
+Levels, brightness, contrast, saturation, blur and sharpen with explicit values; never 'auto'.
+
+- Script: `scripts/adjust.py` · role: execution · backends: magick
+- Writes a file: yes · `--dry-run`: yes · `--json`: yes · verify with: `check`, `look`
+
+| Argument | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `input` (positional) | string | yes |  | image file to read (never modified) |
+| `-o`, `--output` | string | yes |  | file to write; must differ from the input, extension picks the format |
+| `--overwrite` | boolean | no |  | allow replacing an existing output file |
+| `--json` | boolean | no |  | print one JSON object (ok:true/false) instead of text |
+| `--dry-run` | boolean | no |  | print the backend command that would run, write nothing |
+| `--levels` | string | no |  | BLACK,WHITE[,GAMMA]: input black and white points in percent (0-100) and optional gamma, e.g. 5,95 or 0,100,1.2 |
+| `--brightness` | number | no |  | -100 to 100 (0 = unchanged) |
+| `--contrast` | number | no |  | -100 to 100 (0 = unchanged) |
+| `--saturation` | number | no |  | percent of the current saturation, 0-400 (100 = unchanged, 0 = grey) |
+| `--blur` | number | no |  | Gaussian blur sigma in pixels, 0.1-50 |
+| `--sharpen` | number | no |  | unsharp-mask sigma in pixels, 0.1-10 |
+
+Output of `--json` on success (`ok: true`):
+
+| Key | Type | Always present | Description |
+| --- | --- | --- | --- |
+| `ok` | boolean | yes | `true` |
+| `input` | string | yes |  |
+| `output` | string | yes |  |
+| `operations` | array | yes | applied in order: levels, brightness-contrast, saturation, blur, sharpen |
+| `actual` | object | yes | {width, height} in pixels |
+| `backend` | string: `magick` | yes |  |
+
+### `overlay`
+
+Overlay a logo image or a line of text at a position with margin and opacity; text is rendered literally with a script-appropriate font.
+
+- Script: `scripts/overlay.py` · role: execution · backends: magick
+- Writes a file: yes · `--dry-run`: yes · `--json`: yes · verify with: `check`, `look`
+
+| Argument | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `input` (positional) | string | yes |  | base image to read (never modified) |
+| `-o`, `--output` | string | yes |  | file to write; must differ from the input, extension picks the format |
+| `--overwrite` | boolean | no |  | allow replacing an existing output file |
+| `--json` | boolean | no |  | print one JSON object (ok:true/false) instead of text |
+| `--dry-run` | boolean | no |  | print the backend command that would run, write nothing |
+| `--image` | string | no |  | overlay image, e.g. a logo PNG with transparency |
+| `--text` | string | no |  | overlay text (rendered literally, one line) |
+| `--position` | string: `northwest` \| `north` \| `northeast` \| `west` \| `center` \| `east` \| `southwest` \| `south` \| `southeast` | yes |  | where the overlay sits |
+| `--margin` | string | no |  | distance from the edge(s) in pixels (default 0) |
+| `--opacity` | number | no | `1.0` | 0-1 (default 1 = opaque) |
+| `--scale` | number | no |  | --image only: overlay width as a fraction of the base width, e.g. 0.2 |
+| `--font-size` | number | no |  | --text only (required): point size |
+| `--color` | string | no |  | --text only (required): text colour |
+| `--font` | string | no |  | --text only: font file to use instead of the one doctor reports |
+
+Output of `--json` on success (`ok: true`):
+
+| Key | Type | Always present | Description |
+| --- | --- | --- | --- |
+| `ok` | boolean | yes | `true` |
+| `input` | string | yes |  |
+| `output` | string | yes |  |
+| `kind` | string: `image` \| `text` | yes |  |
+| `position` | string | yes |  |
+| `margin` | integer | yes |  |
+| `opacity` | number | yes |  |
+| `overlay` | object | yes | {width, height} in pixels |
+| `font` | string or null | yes | font file used for text; null for an image overlay |
+| `actual` | object | yes | {width, height} in pixels |
+| `backend` | string: `magick` | yes |  |
+
+### `montage`
+
+Compose several images into a row or grid with an explicit background, optional gap and captions.
+
+- Script: `scripts/montage.py` · role: execution · backends: magick
+- Writes a file: yes · `--dry-run`: yes · `--json`: yes · verify with: `check`, `look`
+
+| Argument | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `inputs` (positional) | array of string | yes |  | images in reading order (only read; first frame of multi-frame files) |
+| `-o`, `--output` | string | yes |  | composite to write; must not be one of the inputs |
+| `--overwrite` | boolean | no |  | allow replacing an existing output file |
+| `--json` | boolean | no |  | print one JSON object (ok:true/false) instead of text |
+| `--dry-run` | boolean | no |  | print the backend command that would run, write nothing |
+| `--cols` | string | no |  | images per row (default: all in one row) |
+| `--cell-width` | string | no |  | cell width in pixels (with --cell-height; default: widest input) |
+| `--cell-height` | string | no |  | cell height in pixels (with --cell-width; default: tallest input) |
+| `--gap` | string | no |  | space between cells in pixels (default 0) |
+| `--background` | string | yes |  | colour for gaps and letterboxing, or none for transparent |
+| `--labels` | boolean | no |  | caption each cell with its file name |
+| `--font` | string | no |  | --labels only: font file instead of the one doctor reports |
+
+Output of `--json` on success (`ok: true`):
+
+| Key | Type | Always present | Description |
+| --- | --- | --- | --- |
+| `ok` | boolean | yes | `true` |
+| `inputs` | array | yes | per input: {path, width, height} |
+| `output` | string | yes |  |
+| `cols` | integer | yes |  |
+| `rows` | integer | yes |  |
+| `cell` | object | yes | {width, height} in pixels |
+| `gap` | integer | yes |  |
+| `background` | string | yes |  |
+| `labels` | boolean | yes |  |
+| `font` | string or null | yes |  |
+| `actual` | object | yes | {width, height} in pixels |
+| `backend` | string: `magick` | yes |  |
+
+### `icons`
+
+Make favicon.ico (several sizes), PNG icons and apple-touch-icon.png from one square image, plus the HTML and manifest entries.
+
+- Script: `scripts/icons.py` · role: execution · backends: magick
+- Writes a file: yes · `--dry-run`: yes · `--json`: yes · verify with: `look`
+
+| Argument | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `input` (positional) | string | yes |  | square source image (never modified), at least as large as the largest icon |
+| `-o`, `--output-dir` | string | yes |  | folder to write the icon files into (created if missing) |
+| `--ico-sizes` | string | no | `"16,32,48"` | sizes inside favicon.ico, max 256 (default 16,32,48) |
+| `--png-sizes` | string | no | `"32,192,512"` | PNG icons to write as icon-NxN.png (default 32,192,512) |
+| `--apple-size` | integer | no | `180` | apple-touch-icon.png size, 0 to skip (default 180) |
+| `--apple-background` | string | no |  | flatten apple-touch-icon.png onto this colour |
+| `--overwrite` | boolean | no |  | allow replacing existing icon files |
+| `--json` | boolean | no |  | print one JSON object (ok:true/false) instead of text |
+| `--dry-run` | boolean | no |  | print the backend commands that would run, write nothing |
+
+Output of `--json` on success (`ok: true`):
+
+| Key | Type | Always present | Description |
+| --- | --- | --- | --- |
+| `ok` | boolean | yes | `true` |
+| `input` | string | yes |  |
+| `output_dir` | string | yes |  |
+| `files` | array | yes | per file: {path, purpose, sizes, format} |
+| `html` | array | yes | <link> tags for the written icons |
+| `manifest_icons` | array | yes | web app manifest `icons` entries (192 and up) |
+| `notes` | array | no | present when something needs the caller's attention |
+| `backend` | string: `magick` | yes |  |
+
+### `preset`
+
+Resize to a named published size (og, instagram-*, youtube-thumbnail, ...) with fill, fit or pad; --list shows sizes and their sources.
+
+- Script: `scripts/preset.py` · role: execution · backends: magick, sips
+- Writes a file: yes · `--dry-run`: yes · `--json`: yes · verify with: `check`, `look`
+
+| Argument | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `input` (positional) | string | no |  | image file to read (never modified); not needed with --list |
+| `-o`, `--output` | string | no |  | file to write (required unless --list); must differ from the input |
+| `--overwrite` | boolean | no |  | allow replacing an existing output file |
+| `--json` | boolean | no |  | print one JSON object (ok:true/false) instead of text |
+| `--dry-run` | boolean | no |  | print the backend command that would run, write nothing |
+| `--preset` | string: `apple-touch-icon` \| `instagram-landscape` \| `instagram-portrait` \| `instagram-reel-cover` \| `instagram-square` \| `instagram-story` \| `linkedin-share` \| `og` \| `pinterest-pin` \| `pwa-icon-192` \| `pwa-icon-512` \| `youtube-shorts-thumbnail` \| `youtube-thumbnail` | no |  | named size from presets.json |
+| `--mode` | string: `fill` \| `fit` \| `pad` | no |  | fill: cover and centre-crop to the exact size; fit: inside the size, no crop (may be smaller); pad: fit inside, then pad to the exact size with --color |
+| `--color` | string | no |  | pad mode only: fill colour (none = transparent) |
+| `--list` | boolean | no |  | print every preset with its size and source, write nothing |
+
+Output of `--json` on success (`ok: true`):
+
+| Key | Type | Always present | Description |
+| --- | --- | --- | --- |
+| `ok` | boolean | yes | `true` |
+| `input` | string | no |  |
+| `output` | string | no |  |
+| `preset` | string | no |  |
+| `description` | string | no |  |
+| `source` | string | no | documentation URL the size comes from |
+| `mode` | string: `fill` \| `fit` \| `pad` | no |  |
+| `requested` | object | no | {width, height} in pixels |
+| `actual` | object | no | {width, height} in pixels |
+| `via` | array | no | tools run: [resize] or [resize, pad] |
+| `backend` | string: `magick` \| `sips` | no |  |
+| `presets` | object | no | --list only: every preset with size, description, source, quote |
+
 ### `batch`
 
-Run one of convert/resize/thumb/strip/trim over every image in a folder.
+Run a tool over every image in a folder: per-file tools write one output each, look/montage one composite, icons one folder per image, compare pairs with --against.
 
 - Script: `scripts/batch.py` · role: execution · backends: magick, sips
 - Writes a file: yes · `--dry-run`: yes · `--json`: yes · verify with: `check`
 
 | Argument | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `tool` (positional) | string: `compare` \| `convert` \| `crop` \| `look` \| `optimize` \| `pad` \| `resize` \| `rotate` \| `strip` \| `thumb` \| `trim` | yes |  | tool to run on each file |
+| `tool` (positional) | string: `adjust` \| `compare` \| `convert` \| `crop` \| `icons` \| `look` \| `montage` \| `optimize` \| `overlay` \| `pad` \| `preset` \| `resize` \| `rotate` \| `strip` \| `thumb` \| `trim` | yes |  | tool to run on each file |
 | `-i`, `--input-dir` | string | yes |  | folder of images to read (not recursive) |
 | `-o`, `--output-dir` | string | yes |  | folder to write results into; must differ from --input-dir |
 | `--ext` | string | no |  | output extension, e.g. webp: required for convert, optional for the other tools |

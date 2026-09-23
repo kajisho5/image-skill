@@ -81,7 +81,8 @@ actually usable on this machine - don't take this README's word for it.
 ## Tools
 
 `probe`, `convert`, `resize`, `thumb`, `crop`, `pad`, `rotate`, `optimize`, `strip`,
-`trim`, `check`, `look`, `compare`, `batch`. See [SKILL.md](./SKILL.md) for the rules an
+`trim`, `check`, `look`, `compare`, `overlay`, `adjust`, `montage`, `icons`, `preset`,
+`batch`. See [SKILL.md](./SKILL.md) for the rules an
 agent follows, [docs/contract.md](./docs/contract.md) for every argument and output key,
 and `python3 scripts/_contract.py contract --json` for the same spec as JSON.
 

@@ -6,7 +6,17 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
-(nothing yet)
+- New tools: `overlay.py` (logo or literal text - `%`, backslashes and a leading `@`
+  escaped - at a position with margin/opacity; CJK text picks a CJK font or fails),
+  `adjust.py` (explicit levels/brightness/contrast/saturation/blur/sharpen), `montage.py`
+  (row/grid with a required background, gap, captions), `icons.py` (favicon.ico with
+  16/32/48, PNG 32/192/512, apple-touch-icon 180, plus HTML and manifest entries; square
+  source only, never upscales), `preset.py` (named sizes from `scripts/presets.json`, each
+  with the platform documentation it comes from; no X/Twitter preset because X no longer
+  documents one). `batch.py` runs all of them (`montage` once per folder, `icons` one
+  folder per image).
+- The release-drafter-era `bump-version.js` and `prepend-changelog.js` are removed: the
+  label-driven pipeline cut 0.4.0 end to end (bump commit, tag, Release, CHANGELOG).
 
 ## 0.4.0
 

@@ -19,7 +19,8 @@ RED, BLUE, BLACK, WHITE = (255, 0, 0), (0, 0, 255), (0, 0, 0), (255, 255, 255)
 
 def pixel(path, x, y):
     out = subprocess.run(
-        [which_magick(), path, "-format", f"%[fx:int(255*p{{{x},{y}}}.r)],%[fx:int(255*p{{{x},{y}}}.g)],"
+        [which_magick(), path, "-colorspace", "sRGB", "-format",
+         f"%[fx:int(255*p{{{x},{y}}}.r)],%[fx:int(255*p{{{x},{y}}}.g)],"
          f"%[fx:int(255*p{{{x},{y}}}.b)],%[fx:p{{{x},{y}}}.a]", "info:"],
         capture_output=True, text=True, check=True,
     ).stdout.split(",")
