@@ -12,8 +12,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/kajisho5/image-skill/actions/workflows/test.yml"><img src="https://github.com/kajisho5/image-skill/actions/workflows/test.yml/badge.svg" alt="tests"></a>
-  <a href="https://github.com/kajisho5/image-skill/actions/workflows/codeql.yml"><img src="https://github.com/kajisho5/image-skill/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
+  <a href="https://github.com/kajisho5/imagemagick-skill/actions/workflows/test.yml"><img src="https://github.com/kajisho5/imagemagick-skill/actions/workflows/test.yml/badge.svg" alt="tests"></a>
+  <a href="https://github.com/kajisho5/imagemagick-skill/actions/workflows/codeql.yml"><img src="https://github.com/kajisho5/imagemagick-skill/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
   <a href="https://www.npmjs.com/package/imagemagick-skill"><img src="https://img.shields.io/npm/v/imagemagick-skill" alt="npm"></a>
   <img src="https://img.shields.io/badge/python-3.9%20%7C%203.13-blue" alt="Python 3.9 and 3.13 tested">
   <a href="#imagemagick-compatibility"><img src="https://img.shields.io/badge/ImageMagick-6.9%20%7C%207.1%20%7C%20sips-orange" alt="ImageMagick 6.9, 7.1 and macOS sips tested in CI"></a>
@@ -346,7 +346,7 @@ npx imagemagick-skill --uninstall  # remove from the default target (add --curso
 As a Claude Code plugin (no Node needed; this repository is its own marketplace):
 
 ```bash
-claude plugin marketplace add kajisho5/image-skill
+claude plugin marketplace add kajisho5/imagemagick-skill
 claude plugin install imagemagick-skill@imagemagick-skill
 ```
 

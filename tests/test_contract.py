@@ -122,6 +122,16 @@ class DocsAgreeWithContractTests(unittest.TestCase):
                 else:
                     self.assertEqual(since.strip(), "")
 
+    @unittest.skipUnless(os.environ.get("GITHUB_REPOSITORY"), "runs in GitHub Actions")
+    def test_package_metadata_names_this_repository(self):
+        """npm provenance compares repository.url with the repository that builds the package,
+        case-sensitively: a rename that package.json misses fails `npm publish`."""
+        repo = os.environ["GITHUB_REPOSITORY"]
+        package = json.loads(_read("package.json"))
+        plugin = json.loads(_read(".claude-plugin", "plugin.json"))
+        self.assertEqual(package["repository"]["url"], f"git+https://github.com/{repo}.git")
+        self.assertEqual(plugin["repository"], f"https://github.com/{repo}")
+
     def test_readme_names_every_tool(self):
         readme = _read("README.md")
         for name in _contract.TOOL_META:

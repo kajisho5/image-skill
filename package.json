@@ -30,10 +30,10 @@
   "author": "kajisho5",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kajisho5/image-skill.git"
+    "url": "git+https://github.com/kajisho5/imagemagick-skill.git"
   },
-  "homepage": "https://github.com/kajisho5/image-skill#readme",
-  "bugs": "https://github.com/kajisho5/image-skill/issues",
+  "homepage": "https://github.com/kajisho5/imagemagick-skill#readme",
+  "bugs": "https://github.com/kajisho5/imagemagick-skill/issues",
   "keywords": [
     "imagemagick",
     "image",

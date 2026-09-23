@@ -32,8 +32,8 @@ This project intentionally does **not**:
 ## Development
 
 ```bash
-git clone https://github.com/kajisho5/image-skill
-cd image-skill
+git clone https://github.com/kajisho5/imagemagick-skill
+cd imagemagick-skill
 npm test                                      # python3 -m unittest discover -s tests -v
 python3 scripts/_contract.py doctor --json    # what this machine can run
 python3 .github/scripts/contract_md.py --check
