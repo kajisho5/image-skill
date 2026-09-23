@@ -1,6 +1,7 @@
 """The contract is derived from the scripts, and every surface that restates it
 (docs/contract.md, package/plugin versions, each tool's real --json output) is checked
 against it here, so drift fails CI instead of shipping."""
+import hashlib
 import json
 import os
 import re
@@ -108,6 +109,20 @@ class DocsAgreeWithContractTests(unittest.TestCase):
         for name in _contract.TOOL_META:
             self.assertIn(f"`{name}.py`", skill)
 
+    def test_readme_names_every_tool(self):
+        readme = _read("README.md")
+        for name in _contract.TOOL_META:
+            self.assertIn(f"`{name}.py`", readme)
+
+    def test_readme_demo_gifs_exist_and_are_in_the_gallery(self):
+        gifs = re.findall(r'src="docs/demos/([a-z_]+\.gif)"', _read("README.md"))
+        self.assertEqual(len(gifs), 4)
+        gallery = _read(os.path.join("docs", "demos.md"))
+        for gif in gifs:
+            with open(os.path.join(ROOT, "docs", "demos", gif), "rb") as f:
+                self.assertEqual(f.read(6), b"GIF89a", gif)
+            self.assertIn(f"(demos/{gif})", gallery)
+
     def test_skill_md_frontmatter_name_matches_package(self):
         name = json.loads(_read("package.json"))["name"]
         self.assertIn(f"\nname: {name}\n", _read("SKILL.md"))
@@ -152,14 +167,46 @@ class OutputSchemaConformanceTests(unittest.TestCase):
             "batch": ["thumb", "-i", self.dir_in, "-o", o("batch-out"), "--", "--long-edge", "10"],
         }
 
-    def run_tool(self, name, args):
+    def run_tool(self, name, args, *flags):
+        flags = ("--json",) + flags
         proc = subprocess.run(
-            [sys.executable, os.path.join(SCRIPTS, f"{name}.py"), *args, "--json"]
+            [sys.executable, os.path.join(SCRIPTS, f"{name}.py"), *args, *flags]
             if name != "batch" else
-            [sys.executable, os.path.join(SCRIPTS, "batch.py"), *args[:5], "--json", *args[5:]],
+            [sys.executable, os.path.join(SCRIPTS, "batch.py"), *args[:5], *flags, *args[5:]],
             capture_output=True, text=True, timeout=120,
         )
         return proc, json.loads(proc.stdout)
+
+    def input_digests(self):
+        paths = [self.src, self.square, os.path.join(self.dir_in, "a.png")]
+        digests = {}
+        for path in paths:
+            with open(path, "rb") as f:
+                digests[path] = (hashlib.sha256(f.read()).hexdigest(), os.path.getmtime(path))
+        return digests
+
+    def tree(self):
+        return sorted(os.path.relpath(os.path.join(d, f), self.tmp.name)
+                      for d, _, files in os.walk(self.tmp.name) for f in files)
+
+    def test_no_tool_changes_its_inputs(self):
+        """Every tool, run for real: each input's bytes and mtime are what they were."""
+        before = self.input_digests()
+        for name, args in self.invocations().items():
+            with self.subTest(tool=name):
+                proc, out = self.run_tool(name, args)
+                self.assertEqual(proc.returncode, 0, out)
+                self.assertEqual(self.input_digests(), before)
+
+    def test_dry_run_writes_nothing_for_every_writing_tool(self):
+        before = self.tree()
+        for tool in _contract.build_contract_payload()["tools"]:
+            if not tool["supports_dry_run"]:
+                continue
+            with self.subTest(tool=tool["name"]):
+                proc, out = self.run_tool(tool["name"], self.invocations()[tool["name"]], "--dry-run")
+                self.assertEqual(proc.returncode, 0, out)
+                self.assertEqual(self.tree(), before)
 
     def test_success_output_matches_output_schema(self):
         invocations = self.invocations()

@@ -19,7 +19,9 @@
     "test": "python3 -m unittest discover -s tests -v",
     "contract": "python3 scripts/_contract.py contract --json",
     "doctor": "python3 scripts/_contract.py doctor",
-    "docs:contract": "python3 .github/scripts/contract_md.py --write"
+    "docs:contract": "python3 .github/scripts/contract_md.py --write",
+    "demo": "python3 demos/build.py",
+    "check:readme": "python3 .github/scripts/check_readme.py"
   },
   "engines": {
     "node": ">=16"
