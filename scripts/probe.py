@@ -26,9 +26,9 @@ def build_parser():
     parser = JSONArgumentParser(
         description="Probe an image: dimensions, format, colorspace, alpha, GPS presence"
     )
-    parser.add_argument("input")
-    parser.add_argument("--json", action="store_true")
-    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("input", help="image file to read (never modified)")
+    parser.add_argument("--json", action="store_true", help="print one JSON object (ok:true/false) instead of text")
+    parser.add_argument("--dry-run", action="store_true", help="print the backend command that would run, write nothing")
     return parser
 
 

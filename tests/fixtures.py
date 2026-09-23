@@ -120,3 +120,32 @@ def write_jpeg_with_gps(magick_bin, base_png_path, dest_jpg_path, lat_deg=40.0, 
         f.write(jpeg_bytes[:2])
         f.write(app1)
         f.write(jpeg_bytes[2:])
+
+
+def build_exif_orientation_app1(orientation):
+    """A minimal JPEG APP1/EXIF segment whose IFD0 holds only the Orientation tag
+    (0x0112, SHORT). Hand-built for the same reason as build_exif_gps_app1."""
+    ifd0 = (
+        struct.pack("<H", 1)
+        + struct.pack("<HHIHH", 0x0112, 3, 1, orientation, 0)
+        + struct.pack("<I", 0)
+    )
+    tiff = b"II*\x00" + struct.pack("<I", 8) + ifd0
+    payload = b"Exif\x00\x00" + tiff
+    return b"\xff\xe1" + struct.pack(">H", len(payload) + 2) + payload
+
+
+def write_jpeg_with_orientation(magick_bin, base_png_path, dest_jpg_path, orientation):
+    """Plain JPEG from base_png_path, then splice in an EXIF Orientation tag."""
+    import subprocess
+
+    plain_jpg = dest_jpg_path + ".plain.jpg"
+    subprocess.run([magick_bin, base_png_path, plain_jpg], check=True, capture_output=True)
+    with open(plain_jpg, "rb") as f:
+        jpeg_bytes = f.read()
+    if jpeg_bytes[:2] != b"\xff\xd8":
+        raise RuntimeError("expected a JPEG output (missing SOI marker)")
+    with open(dest_jpg_path, "wb") as f:
+        f.write(jpeg_bytes[:2])
+        f.write(build_exif_orientation_app1(orientation))
+        f.write(jpeg_bytes[2:])

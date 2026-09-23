@@ -1,3 +1,16 @@
+# Config for release-drafter/release-drafter's AUTOLABELER only (.github/workflows/
+# pr-labeler.yml, run with disable-releaser: true). Versions are NOT resolved here:
+# .github/scripts/resolve_version.py reads the labels this applies and decides the release
+# (feature -> minor, fix -> patch, chore/ci/docs/test/refactor/dependencies -> nothing,
+# major/breaking -> refused). Keep the label vocabulary in the two files in step.
+#
+# `major`/`breaking` are never applied automatically (see #11): a title or body pattern is
+# not a decision to break compatibility. A person applies them, and even then
+# resolve_version.py refuses - a major release is a hand-made package.json bump.
+#
+# The other keys (categories, version-resolver, template) are kept only
+# because release-drafter validates its config file as a whole; nothing reads their output.
+
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
 

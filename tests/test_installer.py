@@ -163,5 +163,21 @@ class InstallerTests(unittest.TestCase):
         self.assertFalse(os.path.exists(project_legacy))
 
 
+
+@unittest.skipUnless(shutil.which("npm"), "requires npm")
+class PackageContentsTests(unittest.TestCase):
+    def test_tarball_ships_sources_only(self):
+        with tempfile.TemporaryDirectory() as cache:
+            proc = subprocess.run(
+                ["npm", "pack", "--dry-run", "--json", "--cache", cache],
+                cwd=ROOT, capture_output=True, text=True, timeout=120,
+            )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        files = {f["path"] for f in json.loads(proc.stdout)[0]["files"]}
+        self.assertFalse([f for f in files if f.endswith(".pyc") or "__pycache__" in f])
+        for required in ("bin/install.js", "SKILL.md", "package.json", "scripts/_contract.py", "scripts/_common.py"):
+            self.assertIn(required, files)
+
+
 if __name__ == "__main__":
     unittest.main()

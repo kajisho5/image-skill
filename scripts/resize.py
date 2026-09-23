@@ -24,15 +24,20 @@ from _common import (  # noqa: E402
 
 def build_parser():
     parser = JSONArgumentParser(description="Resize an image (fit, fill, or exact)")
-    parser.add_argument("input")
-    parser.add_argument("-o", "--output", required=True)
-    parser.add_argument("--width", type=int, required=True)
-    parser.add_argument("--height", type=int, required=True)
-    parser.add_argument("--mode", choices=["fit", "fill", "exact"], default="fit")
-    parser.add_argument("--quality", type=int, default=None)
-    parser.add_argument("--overwrite", action="store_true")
-    parser.add_argument("--json", action="store_true")
-    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("input", help="image file to read (never modified)")
+    parser.add_argument("-o", "--output", required=True, help="file to write; must differ from the input, extension picks the format")
+    parser.add_argument("--width", type=int, required=True, help="target width in pixels (the box width for fit)")
+    parser.add_argument("--height", type=int, required=True, help="target height in pixels (the box height for fit)")
+    parser.add_argument(
+        "--mode",
+        choices=["fit", "fill", "exact"],
+        default="fit",
+        help="fit: inside the box, no distortion; fill: cover the box and center-crop; exact: force the size",
+    )
+    parser.add_argument("--quality", type=int, default=None, help="0-100 encoder quality for lossy formats (JPEG/WebP)")
+    parser.add_argument("--overwrite", action="store_true", help="allow replacing an existing output file")
+    parser.add_argument("--json", action="store_true", help="print one JSON object (ok:true/false) instead of text")
+    parser.add_argument("--dry-run", action="store_true", help="print the backend command that would run, write nothing")
     return parser
 
 

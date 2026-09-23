@@ -1,0 +1,19 @@
+{
+  "name": "imagemagick-skill",
+  "description": "Local ImageMagick image editing for coding agents: probe, convert, resize, thumbnail, EXIF/GPS strip, trim, check, batch, with a machine-readable contract and a probe-first / verify-last workflow. Never overwrites originals. No cloud, no API keys.",
+  "version": "0.3.0",
+  "author": {
+    "name": "kajisho5",
+    "url": "https://github.com/kajisho5"
+  },
+  "homepage": "https://github.com/kajisho5/Image-skill",
+  "repository": "https://github.com/kajisho5/Image-skill",
+  "license": "MIT",
+  "keywords": [
+    "imagemagick",
+    "image",
+    "skill",
+    "agent",
+    "mcp"
+  ]
+}

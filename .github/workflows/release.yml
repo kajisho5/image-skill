@@ -1,193 +1,183 @@
-name: Release
+name: release
 
-# Single job, triggered on every push to main. This is deliberate: a push
-# made with the default GITHUB_TOKEN (the version-bump commit and tag this
-# job itself pushes) does NOT trigger another workflow run - that's GitHub's
-# built-in anti-recursion behavior. Splitting this into "push to main" plus a
-# second "on: push tags" workflow would mean the second workflow never fires,
-# since the tag push here is made with GITHUB_TOKEN. Everything - version
-# resolution, file bumps, changelog, tag, GitHub Release, npm publish - has
-# to happen in this one job.
+# Fully automated release, one job on every push to main (same design as
+# kajisho5/ffmpeg-skill). PR merges are the only input:
+#
+#   - If package.json's version still matches the latest vX.Y.Z tag (nobody bumped
+#     it in the merged PR), .github/scripts/resolve_version.py resolves the next
+#     version from the labels of every PR merged since that tag (feature -> minor,
+#     fix -> patch, unlabeled -> patch, chore/ci/docs/test/refactor/dependencies only
+#     -> nothing to release, major/breaking -> refused). auto_bump.py then moves
+#     package.json, .claude-plugin/plugin.json, docs/contract.md and docs/roadmap.md
+#     to it and writes the CHANGELOG.md section, and this job pushes that commit.
+#   - If a PR bumped package.json by hand (and wrote its own CHANGELOG.md section),
+#     that version is used as-is.
+#
+# Either way, once package.json's version has no tag, this creates the tag and a
+# GitHub Release (notes from CHANGELOG.md's matching section) and publishes to npm
+# when an NPM_TOKEN secret exists (without it only the publish is skipped). A push
+# with nothing new to release is a no-op.
+#
+# One job, not "push a tag" + "on: tag" workflows: a tag or commit pushed with the
+# built-in GITHUB_TOKEN does not trigger another workflow run (GitHub's
+# anti-recursion rule), so a second, tag-triggered workflow would never fire. The
+# same rule is why the bump commit below cannot loop.
+#
+# Untrusted text (PR titles) is never interpolated with ${{ }} into a run: block:
+# auto_bump.py reads subjects from `git log` itself, and only our own resolved,
+# numeric version strings pass through step outputs.
+
 on:
   push:
     branches: [main]
 
+# Two quick merges must release one after the other: both runs would resolve "the
+# next version" from the same last tag and collide on the tag.
 concurrency:
   group: release
   cancel-in-progress: false
 
 permissions:
   contents: write
-  pull-requests: read
+  pull-requests: read   # resolve_version.py reads merged PRs' labels through gh api
+  id-token: write       # npm publish --provenance
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
+          # The tip of main, not the triggering SHA: with two quick merges the second run
+          # is queued and must bump on top of whatever the first one already pushed.
+          ref: main
           fetch-depth: 0
-          fetch-tags: true
+          token: ${{ secrets.RELEASE_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Read current package.json version
-        id: pkg
+      - name: Decide whether an automatic version bump is needed
+        id: setup
         run: |
-          version=$(node -p "require('./package.json').version")
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      - name: Find latest release tag
-        id: latest_tag
-        run: |
-          latest=$(git tag --list 'v*' --sort=-v:refname | head -n1 || true)
-          echo "tag=$latest" >> "$GITHUB_OUTPUT"
-          echo "version=${latest#v}" >> "$GITHUB_OUTPUT"
-
-      # dry-run: true is release-drafter's actual documented input for this
-      # (an earlier version of this workflow used a made-up `disable-releaser`
-      # input, which the action silently ignored since it isn't real - it ran
-      # with dry-run effectively off and still produced empty resolved_version
-      # /body on this repo's first-ever run; see the "Fail if version is
-      # empty" guard below, added because of exactly that incident). dry-run
-      # prevents write operations - it only computes the next version and
-      # changelog body from merged PR labels since the last release.
-      - name: Resolve next version and changelog body (dry run)
-        id: drafter
-        uses: release-drafter/release-drafter@v6
-        with:
-          config-name: release-drafter.yml
-          dry-run: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Auto-bump only if package.json's current version is still exactly the
-      # last tagged version (nobody has manually bumped it ahead since then,
-      # including on the very first run when no tag exists yet - the current
-      # package.json version is then treated as the value to release).
-      # Otherwise a manual bump wins outright and is never overwritten.
-      - name: Decide release version
-        id: decide
-        run: |
-          if [ -n "$LATEST_TAG" ] && [ "$PKG_VERSION" = "$LATEST_TAG_VERSION" ]; then
-            echo "auto_bump=true" >> "$GITHUB_OUTPUT"
-            echo "version=$RESOLVED_VERSION" >> "$GITHUB_OUTPUT"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          LAST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          LAST_VERSION="${LAST_TAG#v}"
+          LAST_VERSION="${LAST_VERSION:-0.0.0}"
+          echo "pkg_version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "last_version=$LAST_VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$PKG_VERSION" = "$LAST_VERSION" ]; then
+            echo "needs_auto_bump=true" >> "$GITHUB_OUTPUT"
           else
-            echo "auto_bump=false" >> "$GITHUB_OUTPUT"
-            echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+            echo "needs_auto_bump=false" >> "$GITHUB_OUTPUT"
           fi
-        env:
-          LATEST_TAG: ${{ steps.latest_tag.outputs.tag }}
-          LATEST_TAG_VERSION: ${{ steps.latest_tag.outputs.version }}
-          PKG_VERSION: ${{ steps.pkg.outputs.version }}
-          RESOLVED_VERSION: ${{ steps.drafter.outputs.resolved_version }}
 
-      # Never proceed with an empty version string (e.g. release-drafter
-      # returning an empty resolved_version for any reason) - that would
-      # otherwise silently tag/commit/release as literally "v", corrupting
-      # the release history instead of failing loudly.
-      - name: Fail if the decided version is empty
+      - name: Resolve the next version from merged PR labels
+        id: resolve
+        if: steps.setup.outputs.needs_auto_bump == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LAST_VERSION: ${{ steps.setup.outputs.last_version }}
+        run: python3 .github/scripts/resolve_version.py
+
+      - name: Auto-bump version files and CHANGELOG.md
+        if: |
+          steps.setup.outputs.needs_auto_bump == 'true' &&
+          steps.resolve.outputs.resolved_version != '' &&
+          steps.resolve.outputs.resolved_version != steps.setup.outputs.last_version
+        env:
+          OLD_VERSION: ${{ steps.setup.outputs.last_version }}
+          NEW_VERSION: ${{ steps.resolve.outputs.resolved_version }}
         run: |
+          python3 .github/scripts/auto_bump.py
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json .claude-plugin/plugin.json docs/contract.md docs/roadmap.md CHANGELOG.md
+          git commit -m "chore(release): bump version to ${NEW_VERSION} [skip ci]"
+          # A merge that landed meanwhile makes the push non-fast-forward; replay on top of
+          # it (a real conflict here should fail the run).
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Check whether this version is already released
+        id: check
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
           if [ -z "$VERSION" ]; then
-            echo "::error::release version resolved to an empty string (auto_bump=$AUTO_BUMP) - refusing to tag/release. Check the 'Resolve next version' step's output."
-            exit 1
+            echo "::error::package.json has an empty version - refusing to release"; exit 1
           fi
-        env:
-          VERSION: ${{ steps.decide.outputs.version }}
-          AUTO_BUMP: ${{ steps.decide.outputs.auto_bump }}
-
-      - name: Check whether this version is already tagged
-        id: exists
-        run: |
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          # Tag whatever HEAD is now: after an auto-bump that is the bump commit, so
+          # `git checkout vX.Y.Z` shows package.json at X.Y.Z.
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
-            echo "tagged=true" >> "$GITHUB_OUTPUT"
+            echo "already_released=true" >> "$GITHUB_OUTPUT"
           else
-            echo "tagged=false" >> "$GITHUB_OUTPUT"
+            echo "already_released=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Extract this version's CHANGELOG section
+        if: steps.check.outputs.already_released == 'false'
         env:
-          VERSION: ${{ steps.decide.outputs.version }}
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          awk -v heading="## $VERSION" '
+            /^## / { if (found) exit; if ($0 == heading) { found=1; next } }
+            found { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/release_notes.md"
+          if [ -z "$(tr -d '[:space:]' < "$RUNNER_TEMP/release_notes.md")" ]; then
+            echo "No CHANGELOG.md section found for $VERSION." > "$RUNNER_TEMP/release_notes.md"
+          fi
+
+      - name: Create tag and GitHub Release
+        if: steps.check.outputs.already_released == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.check.outputs.version }}
+          SHA: ${{ steps.check.outputs.sha }}
+        run: |
+          gh release create "v$VERSION" \
+            --target "$SHA" \
+            --title "v$VERSION" \
+            --notes-file "$RUNNER_TEMP/release_notes.md"
 
       - name: Check for an npm publish token
         id: npm_check
+        if: steps.check.outputs.already_released == 'false'
         run: echo "has_token=${{ secrets.NPM_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
 
-      - name: Bump package.json version
-        if: steps.decide.outputs.auto_bump == 'true' && steps.exists.outputs.tagged == 'false'
-        run: node .github/scripts/bump-version.js
-        env:
-          NEW_VERSION: ${{ steps.decide.outputs.version }}
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.already_released == 'false' && steps.npm_check.outputs.has_token == 'true'
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
 
-      # RELEASE_BODY (release-drafter's output, built from contributor PR
-      # titles) is passed via `env:`, not interpolated into this or any run:
-      # block with `${{ }}` - see prepend-changelog.js for why that matters.
-      - name: Update CHANGELOG.md
-        if: steps.exists.outputs.tagged == 'false'
-        run: node .github/scripts/prepend-changelog.js
-        env:
-          RELEASE_VERSION: ${{ steps.decide.outputs.version }}
-          RELEASE_BODY: ${{ steps.drafter.outputs.body }}
-
-      - name: Commit release files
-        if: steps.exists.outputs.tagged == 'false'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json CHANGELOG.md
-          if git diff --cached --quiet; then
-            echo "nothing to commit"
-          else
-            git commit -m "chore(release): v$VERSION"
-            git push origin HEAD:main
-          fi
-        env:
-          VERSION: ${{ steps.decide.outputs.version }}
-
-      - name: Create and push tag
-        if: steps.exists.outputs.tagged == 'false'
-        run: |
-          git tag -a "v$VERSION" -m "v$VERSION"
-          git push origin "v$VERSION"
-        env:
-          VERSION: ${{ steps.decide.outputs.version }}
-
-      # Written to a file and passed with --notes-file rather than as a CLI
-      # argument or embedded in the run: script - same untrusted-content
-      # reasoning as the changelog step.
-      - name: Write release notes to file
-        if: steps.exists.outputs.tagged == 'false'
-        run: |
-          if [ -z "$(printf '%s' "$RELEASE_BODY" | tr -d '[:space:]')" ]; then
-            printf '_No categorized changes recorded for this release._\n' > "$RUNNER_TEMP/release-notes.md"
-          else
-            printf '%s\n' "$RELEASE_BODY" > "$RUNNER_TEMP/release-notes.md"
-          fi
-        env:
-          RELEASE_BODY: ${{ steps.drafter.outputs.body }}
-
-      - name: Create GitHub Release
-        if: steps.exists.outputs.tagged == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.decide.outputs.version }}
-        run: |
-          gh release create "v$VERSION" \
-            --title "v$VERSION" \
-            --notes-file "$RUNNER_TEMP/release-notes.md"
-
-      # Skips cleanly (job stays green) when no NPM_TOKEN secret is
-      # configured - only the publish step is skipped, tag/Release still
-      # happen above.
       - name: Publish to npm
-        if: steps.exists.outputs.tagged == 'false' && steps.npm_check.outputs.has_token == 'true'
-        run: npm publish --access public
+        if: steps.check.outputs.already_released == 'false' && steps.npm_check.outputs.has_token == 'true'
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # A green job is not a correct release: check the registry's `latest` is the version
+      # this run meant to publish, and that an automatic bump never moved the major.
+      - name: Verify the publish landed as intended
+        if: steps.check.outputs.already_released == 'false' && steps.npm_check.outputs.has_token == 'true'
+        env:
+          EXPECTED: ${{ steps.check.outputs.version }}
+          PREVIOUS: ${{ steps.setup.outputs.last_version }}
+          AUTO_BUMPED: ${{ steps.setup.outputs.needs_auto_bump }}
+        run: |
+          PKG=$(node -p "require('./package.json').name")
+          for i in $(seq 1 30); do
+            LATEST=$(npm view "$PKG" version --cache "$RUNNER_TEMP/npm-verify-cache" 2>/dev/null || true)
+            [ "$LATEST" = "$EXPECTED" ] && break
+            echo "registry latest=$LATEST, expected $EXPECTED (attempt $i/30)"; sleep 10
+          done
+          if [ "$LATEST" != "$EXPECTED" ]; then
+            echo "::error::npm reports latest=$LATEST after publishing $EXPECTED"; exit 1
+          fi
+          if [ "$AUTO_BUMPED" = "true" ] && [ "${EXPECTED%%.*}" != "${PREVIOUS%%.*}" ]; then
+            echo "::error::automatic release crossed a major boundary: $PREVIOUS -> $EXPECTED"; exit 1
+          fi
+          echo "published $PKG@$EXPECTED (previous tag $PREVIOUS)"
+
       - name: Note that npm publish was skipped
-        if: steps.exists.outputs.tagged == 'false' && steps.npm_check.outputs.has_token == 'false'
+        if: steps.check.outputs.already_released == 'false' && steps.npm_check.outputs.has_token == 'false'
         run: echo "::notice::NPM_TOKEN secret not set - skipped npm publish. Tag and GitHub Release were still created."
