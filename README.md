@@ -311,7 +311,7 @@ npx imagemagick-skill doctor --json   # backend, heic/webp read+write, fonts, pe
 - whether the machine is `ok` overall
 - whether a given tool can run, from the `tools` field
 
-A Mac with only `sips` is `ok`, but `strip`'s `usable` is no. Whether a Homebrew or apt build can read and write HEIC depends on how it was linked, so run `doctor` rather than trusting any README (this one included).
+A Mac with only `sips` is `ok`, but `strip`'s `usable` is no. Whether a Homebrew or apt build can read and write HEIC depends on how it was linked, so run `doctor` rather than trusting any README (this one included). For HEIC, `doctor` does not stop at ImageMagick's format list: it writes a tiny HEIC and reads it back, and reports the result under `heic.verified`. An encoder-only libheif is listed as readable but cannot decode.
 
 ## ImageMagick compatibility
 
