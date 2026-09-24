@@ -16,13 +16,11 @@ jobs:
   autolabel:
     runs-on: ubuntu-latest
     steps:
-      # disable-releaser is a real release-drafter v6 input (unlike `dry-run`, which v6
-      # does not have): this job only applies labels and never touches draft releases.
-      # Versions are resolved by .github/scripts/resolve_version.py from these labels.
+      # release-drafter v7's autolabeler is its own action: it only applies labels and has
+      # no release-drafting code path at all (v7 removed v6's `disable-releaser`; the main
+      # release-drafter action would draft a release). Versions are resolved by
+      # .github/scripts/resolve_version.py from these labels.
       - name: Autolabel from title/files (release-drafter.yml rules)
-        uses: release-drafter/release-drafter@v6
+        uses: release-drafter/release-drafter/autolabeler@v7
         with:
           config-name: release-drafter.yml
-          disable-releaser: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

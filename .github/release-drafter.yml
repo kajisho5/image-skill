@@ -1,5 +1,5 @@
-# Config for release-drafter/release-drafter's AUTOLABELER only (.github/workflows/
-# pr-labeler.yml, run with disable-releaser: true). Versions are NOT resolved here:
+# Config for release-drafter's AUTOLABELER only (.github/workflows/pr-labeler.yml runs
+# release-drafter/release-drafter/autolabeler@v7, which never drafts a release). Versions are NOT resolved here:
 # .github/scripts/resolve_version.py reads the labels this applies and decides the release
 # (feature -> minor, fix -> patch, chore/ci/docs/test/refactor/dependencies -> nothing,
 # major/breaking -> refused). Keep the label vocabulary in the two files in step.
