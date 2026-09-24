@@ -1,6 +1,6 @@
 # Roadmap
 
-The released version today is **0.7.0** (notes in CHANGELOG.md); **0.6.1** — GPS detection reads the raw EXIF block (HEIC
+The released version today is **0.7.1** (notes in CHANGELOG.md); **0.6.1** — GPS detection reads the raw EXIF block (HEIC
 included, which ImageMagick 6 never parses), and `strip` refuses an output that may
 still carry GPS.
 
@@ -69,7 +69,7 @@ Item IDs never change and are never reused. A dropped item stays in the table as
 | RM-046 | done | 0.6.2 | README with reproducible demo GIFs (`demos/build.py`) and a command-checked README (`check_readme.py`) |
 | RM-047 | done | 0.6.2 | Tests: every tool leaves its inputs byte-identical; `--dry-run` never creates a file |
 | RM-048 | done | 0.7.0 | ImageMagick 6 (`convert`/`identify`, Debian/Ubuntu apt) used directly, no `magick` shim needed |
-| RM-049 | done | main | `doctor` proves HEIC read and write with a real round-trip (an encoder-only libheif passes the mode flags) |
+| RM-049 | done | 0.7.1 | `doctor` proves HEIC read and write with a real round-trip (an encoder-only libheif passes the mode flags) |
 | RM-050 | done | 0.6.2 | Published to npm with provenance (`NPM_TOKEN` secret; repository renamed to `kajisho5/imagemagick-skill`) |
 | RM-051 | planned | | Windows CI job with ImageMagick 7 |
 | RM-052 | planned | | `doctor` field for AVIF read/write, and AVIF in `convert`/`optimize` where the build has it |

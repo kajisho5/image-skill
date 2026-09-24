@@ -6,6 +6,12 @@ under "Unreleased" in a PR move into that release's section.
 
 ## Unreleased
 
+(nothing yet)
+
+## 0.7.1
+
+_Automated release: version and notes generated from pull requests merged since 0.7.0._
+
 - Fix: `doctor` reported HEIC as readable on a machine with only libheif's encoder plugin
   (x265) and no decoder (libde265). ImageMagick's format list says `rw+` either way, and
   every HEIC read then failed with "Unsupported codec". When the list says HEIC is
@@ -13,6 +19,8 @@ under "Unreleased" in a PR move into that release's section.
   `heic.read`, `heic.write` and `heic.usable` follow that result, and `heic.verified`
   reports it. The failing case names the package to install. The temporary folder is
   always removed.
+
+- fix: doctor verifies HEIC by writing and reading back a tiny file (#22)
 
 ## 0.7.0
 
