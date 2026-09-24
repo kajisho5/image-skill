@@ -13,6 +13,7 @@ import re
 import subprocess
 import sys
 import os
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import (  # noqa: E402
@@ -20,6 +21,7 @@ from _common import (  # noqa: E402
     JSONArgumentParser,
     fail,
     find_fonts,
+    magick_argv,
     magick_kind,
     wants_json,
     which_magick,
@@ -647,6 +649,39 @@ def _magick_lists(magick):
     return formats.stdout, policy.stdout, version.stdout
 
 
+def _heic_roundtrip(magick):
+    """Write a tiny HEIC and read it back: {"write": bool, "read": bool or None}.
+
+    `-list format`'s mode flags describe the coder, not the libheif plugins behind it:
+    with only an encoder plugin (x265) ImageMagick still lists HEIC as readable, writes a
+    valid file, and then fails to decode it ("Unsupported codec"). read is None when
+    nothing could be written to test it with."""
+    with tempfile.TemporaryDirectory(prefix="imagemagick-skill-doctor-") as tmp:
+        path = os.path.join(tmp, "probe.heic")
+        try:
+            subprocess.run(magick_argv([magick, "-size", "16x16", "xc:#808080", path]),
+                           capture_output=True, timeout=30)
+            with open(path, "rb") as f:
+                written = f.read(12)[4:8] == b"ftyp"
+        except (OSError, subprocess.TimeoutExpired):
+            written = False
+        if not written:
+            return {"write": False, "read": None}
+        try:
+            proc = subprocess.run(magick_argv([magick, "identify", "-format", "%m", path]),
+                                  capture_output=True, text=True, timeout=30)
+            read = proc.returncode == 0 and proc.stdout.strip().upper().startswith("HEIC")
+        except (OSError, subprocess.TimeoutExpired):
+            read = False
+        return {"write": True, "read": read}
+
+
+HEIC_NO_DECODER = (
+    "ImageMagick lists HEIC as readable, but it could not read back a HEIC it had just written: "
+    "the libheif decoder plugin is missing (Debian/Ubuntu: `sudo apt install libheif-plugin-libde265`)"
+)
+
+
 def _tool_status(magick, sips, needs_magick_only=False):
     if magick:
         return {"usable": True, "backend": "magick"}
@@ -682,6 +717,10 @@ def build_doctor_payload():
             magick_version = version_out.strip().splitlines()[0] if version_out.strip() else None
             caps = _format_capabilities(formats_out)
             heic_read, heic_write = caps.get("HEIC", (False, False))
+            heic_verified = _heic_roundtrip(magick) if heic_write else {"write": False, "read": None}
+            heic_write = heic_write and heic_verified["write"]
+            heic_no_decoder = heic_read and heic_verified["read"] is False
+            heic_read = heic_read and not heic_no_decoder
             webp_read, webp_write = caps.get("WEBP", (False, False))
 
             # "usable" tracks the workflow this skill actually documents: HEIC is
@@ -707,17 +746,20 @@ def build_doctor_payload():
                     "write": True,
                     "backend": "sips",
                     "fix": None,
-                    "note": "magick has no HEIC read delegate here; falling back to sips for HEIC",
+                    "note": HEIC_NO_DECODER + "; falling back to sips for HEIC" if heic_no_decoder
+                    else "magick has no HEIC read delegate here; falling back to sips for HEIC",
                 }
             else:
                 heic = {
                     "usable": False,
                     "read": False,
-                    "write": False,
+                    "write": heic_write,
                     "backend": None,
-                    "fix": "reinstall ImageMagick with HEIC support, e.g. `brew reinstall imagemagick` "
+                    "fix": HEIC_NO_DECODER if heic_no_decoder
+                    else "reinstall ImageMagick with HEIC support, e.g. `brew reinstall imagemagick` "
                     "(needs libheif), or run on macOS to use sips instead",
                 }
+            heic["verified"] = heic_verified
 
             if webp_write:
                 webp = {"usable": True, "read": webp_read, "write": True, "backend": "magick", "fix": None}
